@@ -1,26 +1,132 @@
 @import "tailwindcss";
 
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --canvas: #f5f5f5;
+  --ink: #000000;
+  --muted: rgb(0 0 0 / 0.45);
+  --panel: #000000;
+  --panel-ink: #f5f5f5;
+  --hairline: #000000;
+  --surface: #ececec;
+  /* Legacy Pulse aliases → editorial */
+  --np-bg: var(--canvas);
+  --np-surface: var(--surface);
+  --np-surface-hover: color-mix(in srgb, var(--surface) 80%, var(--ink));
+  --np-border: color-mix(in srgb, var(--hairline) 35%, transparent);
+  --np-accent: var(--ink);
+  --np-accent-muted: color-mix(in srgb, var(--ink) 20%, transparent);
+  --np-accent-fg: var(--canvas);
+  --np-warning: var(--muted);
+  --np-warning-muted: color-mix(in srgb, var(--muted) 30%, transparent);
+  --np-text: var(--ink);
+  --np-text-muted: var(--muted);
+  --np-online: var(--ink);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas: var(--canvas);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-panel: var(--panel);
+  --color-panel-ink: var(--panel-ink);
+  --color-hairline: var(--hairline);
+  --color-surface: var(--surface);
+  --color-np-bg: var(--np-bg);
+  --color-np-surface: var(--np-surface);
+  --color-np-surface-hover: var(--np-surface-hover);
+  --color-np-border: var(--np-border);
+  --color-np-accent: var(--np-accent);
+  --color-np-accent-muted: var(--np-accent-muted);
+  --color-np-accent-fg: var(--np-accent-fg);
+  --color-np-warning: var(--np-warning);
+  --color-np-warning-muted: var(--np-warning-muted);
+  --color-np-text: var(--np-text);
+  --color-np-text-muted: var(--np-text-muted);
+  --color-np-online: var(--np-online);
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-hanken);
+  --font-display: var(--font-space);
+  --font-mono: var(--font-jetbrains);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+    --canvas: #000000;
+    --ink: #f5f5f5;
+    --muted: rgb(245 245 245 / 0.45);
+    --panel: #f5f5f5;
+    --panel-ink: #000000;
+    --hairline: #f5f5f5;
+    --surface: #0d0d0d;
   }
 }
 
+html {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+button,
+[type="button"],
+[type="submit"],
+[type="reset"],
+[role="button"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[type="button"]:disabled,
+[type="submit"]:disabled,
+[type="reset"]:disabled {
+  cursor: not-allowed;
+}
+
+.text-perforated {
+  -webkit-text-stroke: 1.25px currentColor;
+  color: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.matrix-numeral {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  line-height: 0.85;
+}
+
+.busy-dots {
+  animation: busy-pulse 1.05s ease-in-out infinite;
+}
+
+@keyframes busy-pulse {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

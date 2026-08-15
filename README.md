@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Noirly Pulse
 
-## Getting Started
+Dark-mode messaging for the Noirly ecosystem. Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-First, run the development server:
+## Phase status
+
+| Phase | Scope |
+| --- | --- |
+| **0** | Identity login, shell, health, realtime JWT |
+| **1** | Personal DMs, composer, reactions, typing, presence |
+| **2** | Team workspaces, channels, threads, mentions, search |
+| **3** | Push (VAPID), notification prefs, virtualized lists, search jump-to-message, admin delete, Playwright smoke |
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local
+# Register the OIDC client (Identity must be running / Mongo up):
+cd ../noirly-identity
+npm run client:register -- --client-id=noirly-pulse --name=NoirlyPulse --redirect-uri=http://localhost:3004/api/auth/callback/noirly --write-env=../noirly-pulse/.env.local
+cd ../noirly-pulse
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App: http://localhost:3004  
+Identity: http://localhost:3000  
+Realtime (optional): `ws://127.0.0.1:4001/ws`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Web Push (optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx web-push generate-vapid-keys
+# Copy public/private into .env.local (see .env.example)
+```
 
-## Learn More
+Enable push from **Settings → Browser push** after signing in.
 
-To learn more about Next.js, take a look at the following resources:
+### E2E
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | Description |
+| --- | --- |
+| `pnpm dev` | Dev server on port 3004 |
+| `pnpm build` | Production build |
+| `pnpm test` | Vitest unit tests |
+| `pnpm test:e2e` | Playwright smoke tests |

@@ -1,0 +1,7 @@
+import { cn } from "@/src/lib/cn";
+
+export function Skeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn("animate-pulse rounded-md bg-np-surface-hover", className)} />
+  );
+}

@@ -1,0 +1,47 @@
+"use client";
+
+import { useRealtimeEvent } from "@noirly-dev/realtime-client/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { pulseChannel } from "@/src/core/realtime/channels";
+import { qk } from "@/src/core/sync/query-keys";
+import { useUnreadStore } from "@/src/stores/ui-store";
+
+export function InboxEvents({ userId, activeConversationId }: { userId: string; activeConversationId: string | null }) {
+  const queryClient = useQueryClient();
+  const inbox = pulseChannel.inbox(userId);
+
+  useRealtimeEvent<{ conversationId: string; workspaceId?: string | null }>(
+    inbox,
+    "inbox.message",
+    (data) => {
+      void queryClient.invalidateQueries({ queryKey: qk.conversations("personal") });
+      void queryClient.invalidateQueries({ queryKey: qk.workspaces });
+      if (data.workspaceId) {
+        void queryClient.invalidateQueries({ queryKey: qk.channels(data.workspaceId) });
+      }
+      if (data.conversationId !== activeConversationId) {
+        useUnreadStore.getState().bump(data.conversationId);
+      }
+    },
+  );
+
+  useRealtimeEvent<{ conversationId: string }>(inbox, "inbox.mention", (data) => {
+    void queryClient.invalidateQueries({ queryKey: qk.notifications });
+    if (data.conversationId !== activeConversationId) {
+      useUnreadStore.getState().bump(data.conversationId);
+    }
+  });
+
+  useRealtimeEvent<{ conversationId: string }>(inbox, "inbox.thread_reply", (data) => {
+    void queryClient.invalidateQueries({ queryKey: qk.notifications });
+    if (data.conversationId !== activeConversationId) {
+      useUnreadStore.getState().bump(data.conversationId);
+    }
+  });
+
+  useRealtimeEvent(inbox, "inbox.dm.created", () => {
+    void queryClient.invalidateQueries({ queryKey: qk.conversations("personal") });
+  });
+
+  return null;
+}
