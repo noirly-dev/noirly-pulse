@@ -14,10 +14,14 @@ function LoginPopupInner() {
   const next = safeNext(params.get("next"));
 
   useEffect(() => {
-    void signIn("noirly", {
-      redirectTo: `/login/popup-complete?next=${encodeURIComponent(next)}`,
-      callbackUrl: `/login/popup-complete?next=${encodeURIComponent(next)}`,
-    });
+    void signIn(
+      "noirly",
+      {
+        redirectTo: `/login/popup-complete?next=${encodeURIComponent(next)}`,
+        callbackUrl: `/login/popup-complete?next=${encodeURIComponent(next)}`,
+      },
+      { display: "popup" },
+    );
   }, [next]);
 
   return <PulseBusyScreen label="Signing in to Pulse" />;

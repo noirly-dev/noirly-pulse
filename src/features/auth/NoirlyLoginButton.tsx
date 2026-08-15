@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PulseBusyScreen } from "@/src/components/PulseBusyScreen";
+import { ProductGoogleOneTap } from "@/src/features/auth/GoogleOneTap";
 
 const AUTH_MESSAGE = "noirly-auth";
 const AUTH_STORAGE_KEY = "noirly-auth";
+const IDENTITY_URL =
+  process.env.NEXT_PUBLIC_IDENTITY_URL ?? "http://localhost:3000";
 
 function safeNext(value: string): string {
   return value.startsWith("/") && !value.startsWith("//") ? value : "/inbox";
@@ -19,6 +22,14 @@ function readAuthPayload(): { next?: string } | null {
   } catch {
     return null;
   }
+}
+
+function popupFeatures() {
+  const width = 480;
+  const height = 740;
+  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
+  const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
+  return `popup=yes,width=${width},height=${height},left=${left},top=${top}`;
 }
 
 export function NoirlyLoginButton({ redirectTo = "/inbox" }: { redirectTo?: string }) {
@@ -72,27 +83,7 @@ export function NoirlyLoginButton({ redirectTo = "/inbox" }: { redirectTo?: stri
     };
   }, [target]);
 
-  function openIdentityPopup() {
-    setError(null);
-    setSignedIn(false);
-    signedInRef.current = false;
-    setWaiting(true);
-    const width = 480;
-    const height = 740;
-    const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
-    const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
-    const url = `/login/popup?next=${encodeURIComponent(target)}`;
-    const popup = window.open(
-      url,
-      "noirly-identity",
-      `popup=yes,width=${width},height=${height},left=${left},top=${top}`,
-    );
-    if (!popup) {
-      setWaiting(false);
-      setError("Allow popups for Noirly Pulse, then try again.");
-      return;
-    }
-    popup.focus();
+  function watchPopup(popup: Window) {
     const timer = window.setInterval(() => {
       try {
         if (!popup.closed) return;
@@ -121,6 +112,60 @@ export function NoirlyLoginButton({ redirectTo = "/inbox" }: { redirectTo?: stri
     }, 300);
   }
 
+  function openIdentityPopup() {
+    setError(null);
+    setSignedIn(false);
+    signedInRef.current = false;
+    setWaiting(true);
+    const popup = window.open(
+      `/login/popup?next=${encodeURIComponent(target)}`,
+      "noirly-identity",
+      popupFeatures(),
+    );
+    if (!popup) {
+      setWaiting(false);
+      setError("Allow popups for Noirly Pulse, then try again.");
+      return;
+    }
+    popup.focus();
+    watchPopup(popup);
+  }
+
+  function startGoogleOneTap(input: { credential: string; nonce: string }) {
+    setError(null);
+    setSignedIn(false);
+    signedInRef.current = false;
+    setWaiting(true);
+    const popup = window.open("about:blank", "noirly-identity", popupFeatures());
+    if (!popup) {
+      setWaiting(false);
+      setError("Allow popups for Noirly Pulse, then try again.");
+      return;
+    }
+    const returnTo = `${window.location.origin}/login/popup?next=${encodeURIComponent(target)}`;
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = `${IDENTITY_URL.replace(/\/$/, "")}/api/auth/google/one-tap`;
+    form.target = "noirly-identity";
+    form.style.display = "none";
+    for (const [name, value] of Object.entries({
+      credential: input.credential,
+      nonce: input.nonce,
+      return_to: returnTo,
+    })) {
+      const field = document.createElement("input");
+      field.type = "hidden";
+      field.name = name;
+      field.value = value;
+      form.appendChild(field);
+    }
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+    popup.focus();
+    watchPopup(popup);
+  }
+
   return (
     <div className="flex flex-col gap-3">
       {mounted && waiting
@@ -131,6 +176,9 @@ export function NoirlyLoginButton({ redirectTo = "/inbox" }: { redirectTo?: stri
             document.body,
           )
         : null}
+      {mounted ? (
+        <ProductGoogleOneTap identityUrl={IDENTITY_URL} onCredential={startGoogleOneTap} />
+      ) : null}
       <button
         className="flex h-12 w-full cursor-pointer items-center justify-center bg-panel-ink px-5 font-mono text-[11px] font-semibold tracking-[0.16em] text-panel uppercase transition-colors hover:bg-transparent hover:text-panel-ink hover:outline hover:outline-1 hover:outline-dashed hover:outline-panel-ink disabled:cursor-not-allowed disabled:opacity-50"
         type="button"
