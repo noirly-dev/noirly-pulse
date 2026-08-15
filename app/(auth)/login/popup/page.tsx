@@ -20,7 +20,7 @@ function LoginPopupInner() {
         redirectTo: `/login/popup-complete?next=${encodeURIComponent(next)}`,
         callbackUrl: `/login/popup-complete?next=${encodeURIComponent(next)}`,
       },
-      { display: "popup" },
+      { display: "popup", prompt: "select_account" },
     );
   }, [next]);
 
