@@ -12,7 +12,7 @@ export function IconButton({ className, label, type = "button", ...props }: Prop
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-10 items-center justify-center rounded-lg text-[#A3A3A3] transition-colors hover:bg-np-surface-hover hover:text-[#F5F5F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-np-accent",
+        "inline-flex size-10 items-center justify-center text-muted transition-colors hover:bg-ink hover:text-canvas",
         className,
       )}
       {...props}

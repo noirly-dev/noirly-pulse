@@ -26,17 +26,6 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
       className="relative flex w-16 shrink-0 flex-col items-center gap-2 border-r border-dashed border-hairline bg-canvas py-3"
     >
       <Link
-        href="/"
-        onClick={onNavigate}
-        aria-label="Noirly Pulse"
-        className="mb-1 flex size-10 items-center justify-center border border-dashed border-hairline"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-light.png" alt="" className="size-10 dark:hidden" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-dark.png" alt="" className="hidden size-10 dark:block" />
-      </Link>
-      <Link
         href="/inbox"
         onClick={onNavigate}
         aria-label="Personal"
@@ -45,7 +34,7 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
           "relative flex size-10 items-center justify-center text-sm font-semibold",
           activeId === "personal"
             ? "bg-ink text-canvas"
-            : "bg-surface text-ink hover:bg-ink hover:text-canvas",
+            : "text-muted hover:bg-ink hover:text-canvas",
         )}
       >
         {glyph(personal?.name ?? "P")}
@@ -71,7 +60,7 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
               "relative flex size-10 items-center justify-center text-sm font-semibold",
               active
                 ? "bg-ink text-canvas"
-                : "bg-surface text-ink hover:bg-ink hover:text-canvas",
+                : "text-muted hover:bg-ink hover:text-canvas",
             )}
           >
             {glyph(workspace.name)}

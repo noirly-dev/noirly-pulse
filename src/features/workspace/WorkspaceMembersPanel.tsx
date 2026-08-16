@@ -57,12 +57,12 @@ export function WorkspaceMembersPanel({ workspaceId, currentUserId }: Props) {
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-6">
       <div>
         <h1 className="text-lg font-semibold">Members</h1>
-        <p className="mt-1 text-sm text-[#737373]">
+        <p className="mt-1 text-sm text-muted">
           Invite teammates by email. If they already use Pulse, they join immediately.
         </p>
       </div>
       {canManage ? (
-        <div className="space-y-3 rounded-xl border border-np-border bg-np-surface p-4">
+        <div className="space-y-3 border border-dashed border-hairline bg-surface p-4">
           <h2 className="text-sm font-medium">Invite by email</h2>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
@@ -74,7 +74,7 @@ export function WorkspaceMembersPanel({ workspaceId, currentUserId }: Props) {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as "admin" | "member")}
-              className="rounded-lg border border-np-border bg-np-bg px-3 py-2 text-sm"
+              className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm"
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
@@ -83,25 +83,25 @@ export function WorkspaceMembersPanel({ workspaceId, currentUserId }: Props) {
               Invite
             </Button>
           </div>
-          {error ? <p className="text-sm text-np-warning">{error}</p> : null}
+          {error ? <p className="text-sm text-ink">{error}</p> : null}
         </div>
       ) : null}
-      <ul className="divide-y divide-np-border rounded-xl border border-np-border bg-np-surface">
+      <ul className="divide-y divide-hairline border border-dashed border-hairline bg-surface">
         {members.map(({ user, role: memberRole }) => (
           <li key={user.id} className="flex items-center gap-3 px-4 py-3">
             <Avatar name={user.displayName} src={user.avatarUrl} size="sm" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{user.displayName}</p>
-              <p className="truncate text-xs text-[#737373]">{user.email}</p>
+              <p className="truncate text-xs text-muted">{user.email}</p>
             </div>
-            <span className="rounded bg-np-bg px-2 py-0.5 font-mono text-[10px] uppercase text-[#A3A3A3]">
+            <span className="rounded bg-canvas px-2 py-0.5 font-mono text-[10px] uppercase text-muted">
               {memberRole}
             </span>
             {canManage && user.id !== currentUserId && memberRole !== "owner" ? (
               <div className="flex gap-1">
                 <button
                   type="button"
-                  className="text-xs text-[#A3A3A3] hover:text-[#F5F5F5]"
+                  className="text-xs text-muted hover:text-ink"
                   onClick={() =>
                     void changeRole(user, memberRole === "admin" ? "member" : "admin")
                   }
@@ -110,7 +110,7 @@ export function WorkspaceMembersPanel({ workspaceId, currentUserId }: Props) {
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-np-warning"
+                  className="text-xs text-ink"
                   onClick={() => void remove(user)}
                 >
                   Remove

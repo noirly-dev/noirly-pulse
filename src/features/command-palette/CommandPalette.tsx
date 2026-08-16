@@ -11,7 +11,9 @@ import { api } from "@/src/lib/api-client";
 import { useUIStore, useWorkspaceStore } from "@/src/stores/ui-store";
 
 const itemClass =
-  "flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm text-[#F5F5F5] data-[selected=true]:bg-[#121212]";
+  "flex cursor-pointer items-center justify-between px-3 py-2 text-sm text-ink data-[selected=true]:bg-ink data-[selected=true]:text-canvas";
+const headingClass =
+  "mb-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.16em] [&_[cmdk-group-heading]]:text-muted";
 
 type Props = {
   workspaces: WorkspaceSummary[];
@@ -68,24 +70,24 @@ export function CommandPalette({ workspaces, currentUserId }: Props) {
       <button
         type="button"
         aria-label="Close command palette"
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-ink/50"
         onClick={() => setOpen(false)}
       />
-      <div className="relative mx-auto mt-[15vh] w-full max-w-lg px-4">
+      <div className="relative mx-auto mt-[12vh] w-full max-w-lg px-4">
         <Command
-          className="overflow-hidden rounded-xl border border-np-border bg-np-surface shadow-lg"
+          className="overflow-hidden border border-dashed border-hairline bg-surface"
           loop
         >
           <Command.Input
             autoFocus
             placeholder="Jump to a workspace or conversation"
-            className="h-12 w-full border-b border-np-border bg-transparent px-4 text-sm text-[#F5F5F5] outline-none placeholder:text-[#737373]"
+            className="h-12 w-full border-b border-dashed border-hairline bg-transparent px-4 text-sm text-ink outline-none placeholder:text-muted"
           />
           <Command.List className="max-h-80 overflow-y-auto p-2">
-            <Command.Empty className="px-3 py-6 text-sm text-[#A3A3A3]">
+            <Command.Empty className="px-3 py-6 text-center text-sm text-muted">
               No matches.
             </Command.Empty>
-            <Command.Group heading="Navigate" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.16em] [&_[cmdk-group-heading]]:text-[#737373]">
+            <Command.Group heading="Navigate" className={headingClass}>
               <Command.Item className={itemClass} onSelect={() => go("/inbox")}>
                 Inbox
               </Command.Item>
@@ -94,7 +96,7 @@ export function CommandPalette({ workspaces, currentUserId }: Props) {
               </Command.Item>
             </Command.Group>
             {channels.length > 0 ? (
-              <Command.Group heading="Channels" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.16em] [&_[cmdk-group-heading]]:text-[#737373]">
+              <Command.Group heading="Channels" className={headingClass}>
                 {channels.map((channel) => (
                   <Command.Item
                     key={channel.id}
@@ -107,7 +109,7 @@ export function CommandPalette({ workspaces, currentUserId }: Props) {
               </Command.Group>
             ) : null}
             {conversations.length > 0 ? (
-              <Command.Group heading="Direct messages" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.16em] [&_[cmdk-group-heading]]:text-[#737373]">
+              <Command.Group heading="Direct messages" className={headingClass}>
                 {conversations.map((conversation) => (
                   <Command.Item
                     key={conversation.id}
@@ -120,7 +122,7 @@ export function CommandPalette({ workspaces, currentUserId }: Props) {
               </Command.Group>
             ) : null}
             {teams.length > 0 ? (
-              <Command.Group heading="Workspaces" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.16em] [&_[cmdk-group-heading]]:text-[#737373]">
+              <Command.Group heading="Workspaces" className={headingClass}>
                 {teams.map((workspace) => (
                   <Command.Item
                     key={workspace.id}

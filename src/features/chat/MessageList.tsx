@@ -180,7 +180,7 @@ export function MessageList({
         <button
           type="button"
           onClick={jumpToBottom}
-          className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-np-border bg-np-surface px-3 py-1 text-xs text-np-accent shadow"
+          className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-hairline bg-surface px-3 py-1 text-xs text-ink shadow"
         >
           {pendingNew} new message{pendingNew === 1 ? "" : "s"}
         </button>
@@ -193,7 +193,7 @@ export function MessageList({
         {query.hasNextPage ? (
           <button
             type="button"
-            className="mb-3 self-center text-xs text-[#A3A3A3]"
+            className="mb-3 self-center text-xs text-muted"
             onClick={() => void query.fetchNextPage()}
           >
             Load older messages
@@ -229,7 +229,7 @@ export function MessageList({
                   width: "100%",
                   transform: `translateY(${item.start}px)`,
                 }}
-                className={highlighted ? "rounded-lg ring-1 ring-np-accent/60" : undefined}
+                className={highlighted ? "ring-1 ring-ink/60" : undefined}
               >
                 <MessageBubble
                   message={message}

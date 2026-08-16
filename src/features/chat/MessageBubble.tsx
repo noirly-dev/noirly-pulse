@@ -67,16 +67,16 @@ export function MessageBubble({
       </div>
       <div className={cn("max-w-[min(72%,36rem)]", mine ? "items-end" : "items-start")}>
         {!mine && showAvatar && sender ? (
-          <p className="mb-1 px-1 text-xs text-[#A3A3A3]">{sender.displayName}</p>
+          <p className="mb-1 px-1 text-xs text-muted">{sender.displayName}</p>
         ) : null}
         <div
           className={cn(
-            "rounded-2xl px-3 py-2 text-[15px] leading-6",
-            deleted && "bg-transparent italic text-[#A3A3A3]",
-            failed && "border border-np-warning bg-transparent text-[#F5F5F5]",
-            sending && !failed && "bg-np-accent/55 text-np-accent-fg",
-            mine && !deleted && !failed && !sending && "bg-np-accent text-np-accent-fg",
-            !mine && !deleted && "bg-np-surface text-[#F5F5F5]",
+            "border border-dashed border-hairline px-3 py-2 text-[15px] leading-6",
+            deleted && "bg-transparent italic text-muted",
+            failed && "border border-hairline bg-transparent text-ink",
+            sending && !failed && "bg-ink/55 text-canvas",
+            mine && !deleted && !failed && !sending && "bg-ink text-canvas",
+            !mine && !deleted && "bg-surface text-ink",
           )}
         >
           {deleted ? (
@@ -86,7 +86,7 @@ export function MessageBubble({
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                className="w-full rounded-md bg-black/20 p-2 text-sm text-inherit outline-none"
+                className="w-full rounded-md bg-ink/10 p-2 text-sm text-inherit outline-none"
                 rows={3}
               />
               <div className="flex gap-2">
@@ -106,7 +106,7 @@ export function MessageBubble({
             <>
               {message.content ? (
                 <div
-                  className="break-words [&_a]:underline [&_code]:rounded [&_code]:bg-black/20 [&_code]:px-1 [&_code]:font-mono [&_code]:text-[13px]"
+                  className="break-words [&_a]:underline [&_code]:rounded [&_code]:bg-ink/10 [&_code]:px-1 [&_code]:font-mono [&_code]:text-[13px]"
                   dangerouslySetInnerHTML={{
                     __html: renderMarkdownToSafeHtml(message.content),
                   }}
@@ -147,7 +147,7 @@ export function MessageBubble({
                 key={reaction.emoji}
                 type="button"
                 onClick={() => void api.toggleReaction(message.id, reaction.emoji)}
-                className="rounded-full bg-np-surface px-2 py-0.5 text-xs"
+                className="rounded-full bg-surface px-2 py-0.5 text-xs"
               >
                 {reaction.emoji} {reaction.userIds.length}
               </button>
@@ -156,7 +156,7 @@ export function MessageBubble({
         ) : null}
         <div
           className={cn(
-            "mt-1 flex items-center gap-2 text-[11px] text-[#737373]",
+            "mt-1 flex items-center gap-2 text-[11px] text-muted",
             mine ? "justify-end" : "justify-start",
           )}
         >
@@ -172,7 +172,7 @@ export function MessageBubble({
           {receipt === "seen" ? <span>Seen</span> : null}
           {failed ? (
             <>
-              <button type="button" className="text-np-warning" onClick={onRetry}>
+              <button type="button" className="text-ink" onClick={onRetry}>
                 Retry
               </button>
               <button type="button" onClick={onDiscard}>
@@ -183,7 +183,7 @@ export function MessageBubble({
           {!deleted && !failed && message.localStatus !== "sending" && !message.threadParentId && onOpenThread ? (
             <button
               type="button"
-              className="text-[#A3A3A3] hover:text-[#F5F5F5]"
+              className="text-muted hover:text-ink"
               onClick={() => onOpenThread(message.id)}
             >
               {message.replyCount > 0 ? `${message.replyCount} replies` : "Reply in thread"}
@@ -199,7 +199,7 @@ export function MessageBubble({
           >
             <button
               type="button"
-              className="rounded px-1 text-xs text-[#A3A3A3] hover:text-[#F5F5F5]"
+              className="rounded px-1 text-xs text-muted hover:text-ink"
               onClick={() => setPicker((v) => !v)}
             >
               React
@@ -209,7 +209,7 @@ export function MessageBubble({
                 {mine ? (
                   <button
                     type="button"
-                    className="rounded px-1 text-xs text-[#A3A3A3] hover:text-[#F5F5F5]"
+                    className="rounded px-1 text-xs text-muted hover:text-ink"
                     onClick={() => {
                       setDraft(message.content);
                       setEditing(true);
@@ -220,7 +220,7 @@ export function MessageBubble({
                 ) : null}
                 <button
                   type="button"
-                  className="rounded px-1 text-xs text-np-warning"
+                  className="rounded px-1 text-xs text-ink"
                   onClick={() => {
                     const label = canModerate && !mine ? "Delete this message as admin?" : "Delete this message?";
                     if (confirm(label)) void api.deleteMessage(message.id);
@@ -231,12 +231,12 @@ export function MessageBubble({
               </>
             ) : null}
             {picker ? (
-              <div className="absolute bottom-6 z-10 flex gap-1 rounded-lg border border-np-border bg-np-surface p-1">
+              <div className="absolute bottom-6 z-10 flex gap-1 rounded-lg border border-hairline bg-surface p-1">
                 {QUICK_EMOJI.map((emoji) => (
                   <button
                     key={emoji}
                     type="button"
-                    className="size-8 rounded hover:bg-np-surface-hover"
+                    className="size-8 rounded hover:bg-ink hover:text-canvas"
                     onClick={() => {
                       setPicker(false);
                       void api.toggleReaction(message.id, emoji);

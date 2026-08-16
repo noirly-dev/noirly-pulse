@@ -26,23 +26,26 @@ export function Dialog({ open, title, onClose, children }: Props) {
       <button
         type="button"
         aria-label="Close dialog"
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-ink/50"
         onClick={onClose}
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
-        className="relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-t-2xl border border-np-border bg-np-surface p-5 sm:max-w-lg sm:rounded-2xl"
+        className="relative z-10 max-h-[90vh] w-full overflow-y-auto border border-dashed border-hairline bg-surface p-5 sm:max-w-lg"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 id="dialog-title" className="text-lg font-semibold">
+          <h2
+            id="dialog-title"
+            className="font-display text-xl font-bold tracking-[-0.04em] uppercase"
+          >
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-sm text-[#A3A3A3] hover:text-[#F5F5F5]"
+            className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted hover:text-ink"
           >
             Esc
           </button>

@@ -18,11 +18,11 @@ export function PresenceAvatars({ conversationId }: { conversationId: string }) 
           name={String(member.data?.displayName ?? member.userId)}
           src={(member.data?.avatarUrl as string | null | undefined) ?? null}
           size="sm"
-          className="ring-2 ring-np-bg"
+          className="ring-2 ring-canvas"
         />
       ))}
       {members.length > 5 ? (
-        <span className="flex size-8 items-center justify-center rounded-full bg-np-surface text-[10px] text-[#A3A3A3] ring-2 ring-np-bg">
+        <span className="flex size-8 items-center justify-center bg-surface text-[10px] text-muted ring-2 ring-canvas">
           +{members.length - 5}
         </span>
       ) : null}

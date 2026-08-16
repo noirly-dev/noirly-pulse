@@ -3,8 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/src/lib/api-client";
-import { Button } from "@/src/ui/Button";
-import { Input } from "@/src/ui/Input";
 
 export function CreateTeamWorkspace() {
   const router = useRouter();
@@ -15,6 +13,7 @@ export function CreateTeamWorkspace() {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!name.trim()) return;
     setPending(true);
     setError(null);
     try {
@@ -35,7 +34,7 @@ export function CreateTeamWorkspace() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex size-10 items-center justify-center rounded-lg border border-dashed border-np-border text-lg text-[#A3A3A3] hover:border-np-accent hover:text-np-accent"
+        className="flex size-10 items-center justify-center border border-dashed border-hairline text-lg text-muted hover:bg-ink hover:text-canvas"
         aria-label="New team workspace"
         title="New team workspace"
       >
@@ -47,35 +46,39 @@ export function CreateTeamWorkspace() {
   return (
     <form
       onSubmit={onSubmit}
-      className="absolute left-16 top-20 z-50 w-64 space-y-2 rounded-lg border border-np-border bg-np-surface p-3 shadow-lg"
+      className="absolute left-16 top-20 z-50 w-64 border border-dashed border-hairline bg-surface p-3"
     >
-      <label className="block text-xs text-[#A3A3A3]" htmlFor="team-name">
+      <label className="block font-mono text-[10px] uppercase tracking-[0.16em] text-muted" htmlFor="team-name">
         Team name
       </label>
-      <Input
+      <input
         id="team-name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Marketing"
         required
         autoFocus
+        className="mt-2 h-8 w-full border border-dashed border-hairline bg-canvas px-2 text-xs text-ink outline-none"
       />
-      {error ? <p className="text-xs text-np-warning">{error}</p> : null}
-      <div className="flex gap-2">
-        <Button type="submit" disabled={pending} className="h-8 px-3 text-xs">
-          {pending ? "Creating…" : "Create"}
-        </Button>
-        <Button
+      {error ? <p className="mt-2 text-xs text-ink">{error}</p> : null}
+      <div className="mt-2 flex gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="h-8 flex-1 bg-ink text-xs font-semibold text-canvas disabled:opacity-50"
+        >
+          {pending ? "Saving…" : "Create"}
+        </button>
+        <button
           type="button"
-          variant="ghost"
-          className="h-8 px-3 text-xs"
+          className="h-8 border border-dashed border-hairline px-2 text-xs text-muted"
           onClick={() => {
             setOpen(false);
             setError(null);
           }}
         >
           Cancel
-        </Button>
+        </button>
       </div>
     </form>
   );

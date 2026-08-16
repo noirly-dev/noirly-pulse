@@ -104,8 +104,8 @@ export function ChatView({
           avatarUrl={avatarUrl}
         />
       ) : null}
-      <header className="flex items-center gap-3 border-b border-np-border px-4 py-3">
-        <Link href={backHref} className="text-sm text-[#A3A3A3] md:hidden">
+      <header className="flex items-center gap-3 border-b border-dashed border-hairline px-4 py-3">
+        <Link href={backHref} className="text-sm text-muted md:hidden">
           Back
         </Link>
         {!isChannel ? (
@@ -118,11 +118,11 @@ export function ChatView({
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-sm font-semibold">{channelLabel}</h1>
           {conversation.topic ? (
-            <p className="truncate text-xs text-[#737373]">{conversation.topic}</p>
+            <p className="truncate text-xs text-muted">{conversation.topic}</p>
           ) : realtimeEnabled ? (
             <PresenceLine conversationId={conversationId} />
           ) : (
-            <p className="text-xs text-[#737373]">
+            <p className="text-xs text-muted">
               {isChannel ? "Channel" : "Direct message"}
             </p>
           )}
@@ -150,7 +150,7 @@ export function ChatView({
           onOpenThread={onOpenThread}
         />
         {names.length > 0 ? (
-          <p className="px-4 pb-2 text-xs text-[#A3A3A3]" aria-live="polite">
+          <p className="px-4 pb-2 text-xs text-muted" aria-live="polite">
             {names.slice(0, 3).join(", ")}
             {names.length > 3 ? ` and ${names.length - 3} more` : ""} typing
             <span className="ml-1 inline-flex gap-0.5" aria-hidden>
@@ -232,7 +232,7 @@ function PresenceLine({ conversationId }: { conversationId: string }) {
   });
   const count = members.length;
   return (
-    <p className="text-xs text-[#737373]">
+    <p className="text-xs text-muted">
       {count > 1 ? `${count} active` : count === 1 ? "Active now" : "Offline"}
     </p>
   );

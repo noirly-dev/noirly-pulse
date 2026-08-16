@@ -8,7 +8,7 @@ export function ConnectionBanner({ status }: Props) {
   return (
     <div
       role="status"
-      className="border-b border-np-warning bg-np-warning-muted px-4 py-2 text-center text-sm text-np-warning"
+      className="border-b border-dashed border-hairline bg-surface px-4 py-2 text-center text-sm text-ink"
     >
       {status === "reconnecting"
         ? "Reconnecting to Pulse…"

@@ -115,39 +115,39 @@ export function MessageComposer({
   }
 
   return (
-    <div className="relative border-t border-np-border bg-np-bg p-3">
+    <div className="relative border-t border-dashed border-hairline bg-canvas p-3">
       {mentionOptions.length > 0 ? (
-        <ul className="absolute bottom-full left-3 right-3 mb-1 max-h-40 overflow-y-auto rounded-lg border border-np-border bg-np-surface py-1 shadow-lg">
+        <ul className="absolute bottom-full left-3 right-3 mb-1 max-h-40 overflow-y-auto border border-dashed border-hairline bg-surface py-1">
           {mentionOptions.map((user) => (
             <li key={user.id}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-np-surface-hover"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-ink hover:text-canvas"
                 onMouseDown={(event) => {
                   event.preventDefault();
                   insertMention(user);
                 }}
               >
                 <span>{user.displayName}</span>
-                <span className="text-xs text-[#737373]">{user.email}</span>
+                <span className="text-xs text-muted">{user.email}</span>
               </button>
             </li>
           ))}
         </ul>
       ) : null}
       {files.length > 0 ? (
-        <ul className="mb-2 flex flex-wrap gap-2 text-xs text-[#A3A3A3]">
+        <ul className="mb-2 flex flex-wrap gap-2 text-xs text-muted">
           {files.map((file) => (
-            <li key={file.name} className="rounded bg-np-surface px-2 py-1">
+            <li key={file.name} className="rounded bg-surface px-2 py-1">
               {file.name}
             </li>
           ))}
         </ul>
       ) : null}
-      <div className="flex items-end gap-2 rounded-xl border border-np-border bg-np-surface p-2">
+      <div className="flex items-end gap-2 border border-dashed border-hairline bg-surface p-2">
         <button
           type="button"
-          className="size-9 rounded-lg text-[#A3A3A3] hover:bg-np-surface-hover hover:text-[#F5F5F5]"
+          className="size-9 rounded-lg text-muted hover:bg-ink hover:text-canvas hover:text-ink"
           aria-label="Attach file"
           onClick={() => fileRef.current?.click()}
         >
@@ -172,7 +172,7 @@ export function MessageComposer({
           rows={1}
           placeholder="Message"
           aria-label="Message"
-          className="max-h-40 min-h-10 flex-1 resize-none bg-transparent py-2 text-sm text-[#F5F5F5] outline-none placeholder:text-[#737373]"
+          className="max-h-40 min-h-10 flex-1 resize-none bg-transparent py-2 text-sm text-ink outline-none placeholder:text-muted"
         />
         <Button
           className="h-9 px-3"
@@ -182,7 +182,7 @@ export function MessageComposer({
           Send
         </Button>
       </div>
-      <p className="mt-1 px-1 font-mono text-[10px] text-[#737373]">
+      <p className="mt-1 px-1 font-mono text-[10px] text-muted">
         Enter to send · Shift+Enter for a new line · @ to mention
       </p>
     </div>

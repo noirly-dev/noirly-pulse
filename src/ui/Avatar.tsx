@@ -25,7 +25,7 @@ export function Avatar({ name, src, size = "md", className }: Props) {
       <img
         src={src}
         alt=""
-        className={cn("rounded-lg object-cover", sizes[size], className)}
+        className={cn("object-cover", sizes[size], className)}
       />
     );
   }
@@ -34,7 +34,7 @@ export function Avatar({ name, src, size = "md", className }: Props) {
     <span
       aria-hidden
       className={cn(
-        "inline-flex items-center justify-center rounded-lg bg-np-surface font-medium text-[#F5F5F5]",
+        "inline-flex items-center justify-center bg-surface font-medium text-ink",
         sizes[size],
         className,
       )}

@@ -100,51 +100,51 @@ export function NotificationSettings() {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3 rounded-xl border border-np-border bg-np-surface p-5">
-        <h2 className="text-sm font-semibold text-[#F5F5F5]">Default notifications</h2>
-        <p className="text-sm text-[#737373]">
+      <section className="space-y-3 border border-dashed border-hairline bg-surface p-5">
+        <h2 className="text-sm font-semibold text-ink">Default notifications</h2>
+        <p className="text-sm text-muted">
           Applies to new conversations. Override per channel from channel settings later.
         </p>
         <div className="space-y-2">
           {PREFS.map((option) => (
             <label
               key={option.value}
-              className="flex cursor-pointer gap-3 rounded-lg border border-np-border px-3 py-3 hover:bg-np-surface-hover"
+              className="flex cursor-pointer gap-3 border border-dashed border-hairline px-3 py-3 hover:bg-ink hover:text-canvas"
             >
               <input
                 type="radio"
                 name="notification-pref"
                 checked={pref === option.value}
                 onChange={() => savePref.mutate(option.value)}
-                className="mt-1 accent-np-accent"
+                className="mt-1 accent-ink"
               />
               <span>
-                <span className="block text-sm text-[#F5F5F5]">{option.label}</span>
-                <span className="block text-xs text-[#737373]">{option.description}</span>
+                <span className="block text-sm text-ink">{option.label}</span>
+                <span className="block text-xs text-muted">{option.description}</span>
               </span>
             </label>
           ))}
         </div>
       </section>
 
-      <section className="space-y-3 rounded-xl border border-np-border bg-np-surface p-5">
-        <h2 className="text-sm font-semibold text-[#F5F5F5]">Browser push</h2>
+      <section className="space-y-3 border border-dashed border-hairline bg-surface p-5">
+        <h2 className="text-sm font-semibold text-ink">Browser push</h2>
         {pushState === "unsupported" ? (
-          <p className="text-sm text-[#737373]">Push is not supported in this browser.</p>
+          <p className="text-sm text-muted">Push is not supported in this browser.</p>
         ) : pushState === "denied" ? (
-          <p className="text-sm text-[#737373]">
+          <p className="text-sm text-muted">
             Notifications are blocked. Enable them in your browser settings for this site.
           </p>
         ) : pushState === "on" ? (
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-[#A3A3A3]">Push is enabled for mentions, DMs, and thread replies.</p>
+            <p className="text-sm text-muted">Push is enabled for mentions, DMs, and thread replies.</p>
             <Button variant="ghost" disabled={pushBusy} onClick={() => void disablePush()}>
               Disable
             </Button>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-[#A3A3A3]">
+            <p className="text-sm text-muted">
               Get notified when you are away from Pulse.
             </p>
             <Button disabled={pushBusy} onClick={() => void enablePush()}>
