@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@noirly-dev/realtime-client": "^0.1.0",
-    "@noirly-dev/ui": "file:../noirly-ui/packages/ui",
+    "@noirly-dev/ui": "^0.1.1",
     "lucide-react": "^0.544.0",
     "@noirly-dev/realtime-shared": "^0.1.0",
     "@tanstack/react-query": "^5.101.4",
