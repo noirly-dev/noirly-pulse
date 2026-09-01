@@ -30,7 +30,7 @@ const notificationSchema = new Schema(
     messageId: {
       type: Schema.Types.ObjectId,
       ref: "Message",
-      required: true,
+      default: null,
     },
     actorId: {
       type: Schema.Types.ObjectId,

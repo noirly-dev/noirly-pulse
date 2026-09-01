@@ -8,6 +8,8 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Message, User } from "@/src/core/models/types";
 import { PresenceAvatars } from "@/src/features/channels/PresenceAvatars";
+import { ChannelCallBanner } from "@/src/features/calls/ChannelCallBanner";
+import { StartCallButtons } from "@/src/features/calls/StartCallButtons";
 import { conversationTitle, clientNonce } from "@/src/core/chat/title";
 import { pulseChannel } from "@/src/core/realtime/channels";
 import { appendMessage, markFailed, replaceNonce, type MessagesInfinite } from "@/src/core/sync/message-cache";
@@ -17,7 +19,7 @@ import { MessageComposer } from "@/src/features/composer/MessageComposer";
 import { ConversationRealtime } from "@/src/features/realtime/ConversationRealtime";
 import { api } from "@/src/lib/api-client";
 import { useTypingStore, useUnreadStore } from "@/src/stores/ui-store";
-import { Avatar } from "@/src/ui/Avatar";
+import { Avatar } from "@/src/components/Avatar";
 import { EmptyState } from "@/src/components/EmptyState";
 
 type Props = {
@@ -104,8 +106,8 @@ export function ChatView({
           avatarUrl={avatarUrl}
         />
       ) : null}
-      <header className="flex items-center gap-3 border-b border-dashed border-hairline px-4 py-3">
-        <Link href={backHref} className="text-sm text-muted md:hidden">
+      <header className="flex items-center gap-3 border-b border border-[var(--hairline)] px-4 py-3">
+        <Link href={backHref} className="text-sm text-muted-foreground md:hidden">
           Back
         </Link>
         {!isChannel ? (
@@ -118,11 +120,11 @@ export function ChatView({
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-sm font-semibold">{channelLabel}</h1>
           {conversation.topic ? (
-            <p className="truncate text-xs text-muted">{conversation.topic}</p>
+            <p className="truncate text-xs text-muted-foreground">{conversation.topic}</p>
           ) : realtimeEnabled ? (
             <PresenceLine conversationId={conversationId} />
           ) : (
-            <p className="text-xs text-muted">
+            <p className="text-xs text-muted-foreground">
               {isChannel ? "Channel" : "Direct message"}
             </p>
           )}
@@ -130,7 +132,38 @@ export function ChatView({
         {realtimeEnabled && isChannel ? (
           <PresenceAvatars conversationId={conversationId} />
         ) : null}
+        {(conversation.kind === "dm" ||
+          conversation.kind === "group_dm" ||
+          conversation.kind === "channel") &&
+        !threadParentId ? (
+          <StartCallButtons
+            conversationId={conversationId}
+            peerName={title}
+            peerUserId={
+              conversation.kind === "dm"
+                ? conversation.members.find((m) => m.id !== currentUserId)?.id
+                : undefined
+            }
+            peerAvatarUrl={
+              conversation.kind === "dm"
+                ? conversation.members.find((m) => m.id !== currentUserId)?.avatarUrl
+                : undefined
+            }
+            currentUserId={currentUserId}
+            conversationKind={conversation.kind}
+            canModerate={canModerate}
+            workspaceId={conversation.workspaceId}
+          />
+        ) : null}
       </header>
+      {realtimeEnabled ? (
+        <ChannelCallBanner
+          conversationId={conversationId}
+          currentUserId={currentUserId}
+          canModerate={canModerate}
+          conversationKind={conversation.kind}
+        />
+      ) : null}
       <div
         className="flex min-h-0 flex-1 flex-col"
         onMouseMove={() => {
@@ -150,7 +183,7 @@ export function ChatView({
           onOpenThread={onOpenThread}
         />
         {names.length > 0 ? (
-          <p className="px-4 pb-2 text-xs text-muted" aria-live="polite">
+          <p className="px-4 pb-2 text-xs text-muted-foreground" aria-live="polite">
             {names.slice(0, 3).join(", ")}
             {names.length > 3 ? ` and ${names.length - 3} more` : ""} typing
             <span className="ml-1 inline-flex gap-0.5" aria-hidden>
@@ -179,7 +212,9 @@ export function ChatView({
             id: `tmp-${nonce}`,
             conversationId,
             senderId: currentUserId,
+            kind: "user",
             content,
+            callLog: null,
             mentionedUserIds: [],
             attachments,
             threadParentId,
@@ -232,7 +267,7 @@ function PresenceLine({ conversationId }: { conversationId: string }) {
   });
   const count = members.length;
   return (
-    <p className="text-xs text-muted">
+    <p className="text-xs text-muted-foreground">
       {count > 1 ? `${count} active` : count === 1 ? "Active now" : "Offline"}
     </p>
   );

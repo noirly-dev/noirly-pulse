@@ -1,4 +1,4 @@
-import { cn } from "@/src/lib/cn";
+import { cn } from "@noirly-dev/ui";
 import type { ButtonHTMLAttributes } from "react";
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -12,7 +12,7 @@ export function IconButton({ className, label, type = "button", ...props }: Prop
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-10 items-center justify-center text-muted transition-colors hover:bg-ink hover:text-canvas",
+        "inline-flex size-10 items-center justify-center rounded-xl text-[var(--muted-foreground)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]",
         className,
       )}
       {...props}

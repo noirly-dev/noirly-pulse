@@ -23,7 +23,7 @@ export function SignOutButton() {
         ? createPortal(<PulseBusyScreen label="Signing out" />, document.body)
         : null}
       <button
-        className="w-full cursor-pointer border border-dashed border-hairline px-3 py-1.5 text-left text-sm text-muted hover:bg-ink hover:text-canvas"
+        className="w-full cursor-pointer border border border-[var(--hairline)] px-3 py-1.5 text-left text-sm text-muted-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
         type="button"
         onClick={() => void onSignOut()}
         disabled={busy}

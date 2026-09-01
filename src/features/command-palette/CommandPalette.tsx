@@ -11,9 +11,9 @@ import { api } from "@/src/lib/api-client";
 import { useUIStore, useWorkspaceStore } from "@/src/stores/ui-store";
 
 const itemClass =
-  "flex cursor-pointer items-center justify-between px-3 py-2 text-sm text-ink data-[selected=true]:bg-ink data-[selected=true]:text-canvas";
+  "flex cursor-pointer items-center justify-between px-3 py-2 text-sm text-foreground data-[selected=true]:bg-ink data-[selected=true]:text-canvas";
 const headingClass =
-  "mb-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.16em] [&_[cmdk-group-heading]]:text-muted";
+  "mb-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.16em] [&_[cmdk-group-heading]]:text-muted-foreground";
 
 type Props = {
   workspaces: WorkspaceSummary[];
@@ -75,16 +75,16 @@ export function CommandPalette({ workspaces, currentUserId }: Props) {
       />
       <div className="relative mx-auto mt-[12vh] w-full max-w-lg px-4">
         <Command
-          className="overflow-hidden border border-dashed border-hairline bg-surface"
+          className="overflow-hidden border border border-[var(--hairline)] bg-[var(--surface)]"
           loop
         >
           <Command.Input
             autoFocus
             placeholder="Jump to a workspace or conversation"
-            className="h-12 w-full border-b border-dashed border-hairline bg-transparent px-4 text-sm text-ink outline-none placeholder:text-muted"
+            className="h-12 w-full border-b border border-[var(--hairline)] bg-transparent px-4 text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
           <Command.List className="max-h-80 overflow-y-auto p-2">
-            <Command.Empty className="px-3 py-6 text-center text-sm text-muted">
+            <Command.Empty className="px-3 py-6 text-center text-sm text-muted-foreground">
               No matches.
             </Command.Empty>
             <Command.Group heading="Navigate" className={headingClass}>

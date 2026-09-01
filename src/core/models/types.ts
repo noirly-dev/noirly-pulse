@@ -1,8 +1,14 @@
 import type {
   AttachmentKind,
+  CallEndReason,
+  CallLogKind,
+  CallMediaPath,
+  CallStatus,
+  CallType,
   ChannelVisibility,
   ConversationKind,
   MemberRole,
+  MessageKind,
   MessageStatus,
   NotificationKind,
   NotificationPref,
@@ -107,11 +113,22 @@ export interface Attachment {
   height: number | null;
 }
 
+export interface CallLogPayload {
+  callId: string;
+  logKind: CallLogKind;
+  type: CallType;
+  durationSeconds: number | null;
+  initiatedBy: string;
+  mediaPath: CallMediaPath;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
   senderId: string;
+  kind: MessageKind;
   content: string;
+  callLog: CallLogPayload | null;
   mentionedUserIds: string[];
   attachments: Attachment[];
   threadParentId: string | null;
@@ -125,6 +142,11 @@ export interface Message {
   reactions: Array<{ emoji: string; userIds: string[] }>;
   localStatus?: MessageStatus;
 }
+
+export type CallLogEntry = Message & {
+  kind: "call_log";
+  callLog: CallLogPayload;
+};
 
 export interface OptimisticMessage extends Message {
   localStatus: MessageStatus;
@@ -160,7 +182,7 @@ export interface Notification {
   kind: NotificationKind;
   workspaceId: string | null;
   conversationId: string;
-  messageId: string;
+  messageId: string | null;
   actorId: string;
   readAt: string | null;
   createdAt: string;
@@ -192,3 +214,46 @@ export type ConversationSummary = Conversation & {
   unreadCount: number;
   members: ConversationPeer[];
 };
+
+export interface Call {
+  id: string;
+  conversationId: string;
+  workspaceId: string | null;
+  initiatedBy: string;
+  type: CallType;
+  status: CallStatus;
+  mediaPath: CallMediaPath;
+  presenterUserId: string | null;
+  recording: boolean;
+  startedAt: string | null;
+  endedAt: string | null;
+  endReason: CallEndReason | null;
+  ringTimeoutMs: number;
+  clientNonce: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CallParticipant {
+  id: string;
+  callId: string;
+  userId: string;
+  joinedAt: string | null;
+  leftAt: string | null;
+  isMuted: boolean;
+  isVideoOn: boolean;
+  isPresenting: boolean;
+  handRaised: boolean;
+  role: "host" | "guest";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CallParticipantPublic extends CallParticipant {
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export interface CallPublic extends Call {
+  participants: CallParticipantPublic[];
+}

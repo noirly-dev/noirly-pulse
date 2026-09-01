@@ -5,9 +5,10 @@ import { useState } from "react";
 import type { ConversationPeer, Message } from "@/src/core/models/types";
 import { renderMarkdownToSafeHtml } from "@/src/core/markdown/sanitize";
 import { cn } from "@/src/lib/cn";
+import { CallLogBubble } from "@/src/features/calls/CallLogBubble";
 import { api } from "@/src/lib/api-client";
-import { Avatar } from "@/src/ui/Avatar";
-import { Button } from "@/src/ui/Button";
+import { Button } from "@noirly-dev/ui";
+import { Avatar } from "@/src/components/Avatar";
 
 const QUICK_EMOJI = ["👍", "❤️", "😂", "🎉", "👀", "🔥"];
 
@@ -41,6 +42,11 @@ export function MessageBubble({
   const deleted = Boolean(message.deletedAt);
   const failed = message.localStatus === "failed";
   const sending = message.localStatus === "sending";
+  const callLog = message.kind === "call_log";
+
+  if (callLog) {
+    return <CallLogBubble content={message.content} callLog={message.callLog} createdAt={message.createdAt} />;
+  }
 
   async function saveEdit() {
     const next = draft.trim();
@@ -67,16 +73,16 @@ export function MessageBubble({
       </div>
       <div className={cn("max-w-[min(72%,36rem)]", mine ? "items-end" : "items-start")}>
         {!mine && showAvatar && sender ? (
-          <p className="mb-1 px-1 text-xs text-muted">{sender.displayName}</p>
+          <p className="mb-1 px-1 text-xs text-muted-foreground">{sender.displayName}</p>
         ) : null}
         <div
           className={cn(
-            "border border-dashed border-hairline px-3 py-2 text-[15px] leading-6",
-            deleted && "bg-transparent italic text-muted",
-            failed && "border border-hairline bg-transparent text-ink",
+            "border border border-[var(--hairline)] px-3 py-2 text-[15px] leading-6",
+            deleted && "bg-transparent italic text-muted-foreground",
+            failed && "border border-[var(--hairline)] bg-transparent text-foreground",
             sending && !failed && "bg-ink/55 text-canvas",
-            mine && !deleted && !failed && !sending && "bg-ink text-canvas",
-            !mine && !deleted && "bg-surface text-ink",
+            mine && !deleted && !failed && !sending && "bg-[var(--accent-soft)] text-[var(--accent)]",
+            !mine && !deleted && "bg-[var(--surface)] text-foreground",
           )}
         >
           {deleted ? (
@@ -147,7 +153,7 @@ export function MessageBubble({
                 key={reaction.emoji}
                 type="button"
                 onClick={() => void api.toggleReaction(message.id, reaction.emoji)}
-                className="rounded-full bg-surface px-2 py-0.5 text-xs"
+                className="rounded-full bg-[var(--surface)] px-2 py-0.5 text-xs"
               >
                 {reaction.emoji} {reaction.userIds.length}
               </button>
@@ -156,7 +162,7 @@ export function MessageBubble({
         ) : null}
         <div
           className={cn(
-            "mt-1 flex items-center gap-2 text-[11px] text-muted",
+            "mt-1 flex items-center gap-2 text-[11px] text-muted-foreground",
             mine ? "justify-end" : "justify-start",
           )}
         >
@@ -172,7 +178,7 @@ export function MessageBubble({
           {receipt === "seen" ? <span>Seen</span> : null}
           {failed ? (
             <>
-              <button type="button" className="text-ink" onClick={onRetry}>
+              <button type="button" className="text-foreground" onClick={onRetry}>
                 Retry
               </button>
               <button type="button" onClick={onDiscard}>
@@ -183,7 +189,7 @@ export function MessageBubble({
           {!deleted && !failed && message.localStatus !== "sending" && !message.threadParentId && onOpenThread ? (
             <button
               type="button"
-              className="text-muted hover:text-ink"
+              className="text-muted-foreground hover:text-foreground"
               onClick={() => onOpenThread(message.id)}
             >
               {message.replyCount > 0 ? `${message.replyCount} replies` : "Reply in thread"}
@@ -199,7 +205,7 @@ export function MessageBubble({
           >
             <button
               type="button"
-              className="rounded px-1 text-xs text-muted hover:text-ink"
+              className="rounded px-1 text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setPicker((v) => !v)}
             >
               React
@@ -209,7 +215,7 @@ export function MessageBubble({
                 {mine ? (
                   <button
                     type="button"
-                    className="rounded px-1 text-xs text-muted hover:text-ink"
+                    className="rounded px-1 text-xs text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       setDraft(message.content);
                       setEditing(true);
@@ -220,7 +226,7 @@ export function MessageBubble({
                 ) : null}
                 <button
                   type="button"
-                  className="rounded px-1 text-xs text-ink"
+                  className="rounded px-1 text-xs text-foreground"
                   onClick={() => {
                     const label = canModerate && !mine ? "Delete this message as admin?" : "Delete this message?";
                     if (confirm(label)) void api.deleteMessage(message.id);
@@ -231,12 +237,12 @@ export function MessageBubble({
               </>
             ) : null}
             {picker ? (
-              <div className="absolute bottom-6 z-10 flex gap-1 rounded-lg border border-hairline bg-surface p-1">
+              <div className="absolute bottom-6 z-10 flex gap-1 rounded-lg border border-[var(--hairline)] bg-[var(--surface)] p-1">
                 {QUICK_EMOJI.map((emoji) => (
                   <button
                     key={emoji}
                     type="button"
-                    className="size-8 rounded hover:bg-ink hover:text-canvas"
+                    className="size-8 rounded hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
                     onClick={() => {
                       setPicker(false);
                       void api.toggleReaction(message.id, emoji);

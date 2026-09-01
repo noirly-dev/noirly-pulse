@@ -23,6 +23,7 @@
 | **Forms** | **React Hook Form + Zod** | Workspace create, channel settings, invites. **Composer is not a form.** |
 | **Package manager** | **pnpm** | Required. Dev server port **3004**. |
 | **IDs** | Mongo `ObjectId` as string in the API | Matches Flow/Ledger implementation. Client optimistic ids use ULID `clientNonce`. |
+| **Calling** | **WebRTC + noirly-realtime signaling + self-hosted mediasoup SFU** | See [`docs/CALLS.md`](./CALLS.md). No Twilio / Daily / Agora / LiveKit Cloud. 1:1 DMs are P2P; group/channel calls go through mediasoup. |
 
 ---
 
@@ -55,7 +56,7 @@ Pulse is the most realtime-dependent Noirly product. Live delivery, typing, pres
 ### 1.3 Non-goals (MVP)
 
 - Native mobile / Expo (future app consumes `pulse-core` + the same API)
-- Voice/video, screen share, huddles
+- Voice/video, screen share, huddles — **moved to [`docs/CALLS.md`](./CALLS.md)** (phased: MVP 1:1 P2P → v1 SFU group + screen share → v2 backgrounds / noise / recording)
 - Message encryption / E2EE
 - Shared workspaces with Flow or Ledger
 - Light theme
@@ -67,7 +68,7 @@ Pulse is the most realtime-dependent Noirly product. Live delivery, typing, pres
 ### 1.4 Product principles
 
 1. **Mongo is system truth. React Query is cache truth. noirly-realtime patches the cache.**
-2. **Clients never persist durable chat.** The browser POSTs; the server writes; the server publishes. Clients may publish **ephemeral** typing only, on a dedicated channel.
+2. **Clients never persist durable chat.** The browser POSTs; the server writes; the server publishes. Clients may publish **ephemeral** typing and **WebRTC signaling** only, on dedicated channels (`ty:{id}`, `call:{callId}`).
 3. **One Conversation id** for DMs, group DMs, and channels. Threads are messages with `threadParentId`, not a second conversation.
 4. **Personal is a nav mode, not a fake team.** DMs live at user scope. Team workspaces own channels.
 5. **Realtime channel names are `kind:id`.** The engine rejects extra colons. Nested paths like `workspace:{id}:channel:{id}` are invalid.
@@ -83,6 +84,7 @@ Pulse is the most realtime-dependent Noirly product. Live delivery, typing, pres
 | Read-receipt persist (`lastReadMessageId`) | Live `read.receipt` fanout after persist |
 | Search, uploads, notification list | Inbox badges / mention pings (`inbox.*`) |
 | Auth session, realtime JWT mint | Connection status, replay, reconnect |
+| Call create / join / ICE credentials / SFU join | WebRTC offer/answer/ICE + call presence (`call:{callId}`, ephemeral) |
 
 Reconciliation: WS appends/patches React Query; on reconnect, subscribe with `lastEventId`; on `recovery:gap` or stale tab, REST `?after=` catch-up. Details in §5.
 

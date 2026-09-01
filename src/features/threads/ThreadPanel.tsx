@@ -5,7 +5,7 @@ import type { User } from "@/src/core/models/types";
 import { qk } from "@/src/core/sync/query-keys";
 import { ChatView } from "@/src/features/chat/ChatView";
 import { api } from "@/src/lib/api-client";
-import { IconButton } from "@/src/ui/IconButton";
+import { IconButton } from "@/src/components/IconButton";
 
 type Props = {
   conversationId: string;
@@ -34,11 +34,11 @@ export function ThreadPanel({
   });
 
   return (
-    <aside className="hidden w-[min(420px,40%)] shrink-0 flex-col border-l border-hairline bg-canvas md:flex">
-      <div className="flex items-center justify-between border-b border-hairline px-4 py-3">
+    <aside className="hidden w-[min(420px,40%)] shrink-0 flex-col border-l border-[var(--hairline)] bg-background md:flex">
+      <div className="flex items-center justify-between border-b border-[var(--hairline)] px-4 py-3">
         <div>
           <p className="text-sm font-semibold">Thread</p>
-          <p className="text-xs text-muted">#{data?.conversation.name ?? "channel"}</p>
+          <p className="text-xs text-muted-foreground">#{data?.conversation.name ?? "channel"}</p>
         </div>
         <IconButton label="Close thread" onClick={onClose}>
           ×

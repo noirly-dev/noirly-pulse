@@ -14,7 +14,7 @@ import {
 import { qk } from "@/src/core/sync/query-keys";
 import { MessageBubble } from "@/src/features/chat/MessageBubble";
 import { api } from "@/src/lib/api-client";
-import { LiveRegion } from "@/src/ui/LiveRegion";
+import { LiveRegion } from "@/src/components/LiveRegion";
 
 type Props = {
   conversation: ConversationSummary;
@@ -180,7 +180,7 @@ export function MessageList({
         <button
           type="button"
           onClick={jumpToBottom}
-          className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-hairline bg-surface px-3 py-1 text-xs text-ink shadow"
+          className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1 text-xs text-foreground shadow"
         >
           {pendingNew} new message{pendingNew === 1 ? "" : "s"}
         </button>
@@ -193,7 +193,7 @@ export function MessageList({
         {query.hasNextPage ? (
           <button
             type="button"
-            className="mb-3 self-center text-xs text-muted"
+            className="mb-3 self-center text-xs text-muted-foreground"
             onClick={() => void query.fetchNextPage()}
           >
             Load older messages

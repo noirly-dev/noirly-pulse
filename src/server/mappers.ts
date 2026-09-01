@@ -2,6 +2,9 @@ import type { Types } from "mongoose";
 import type { ChannelVisibility, ConversationKind, MemberRole } from "@/src/core/models/enums";
 import type {
   Attachment,
+  Call,
+  CallLogPayload,
+  CallParticipant,
   Conversation,
   Invite,
   Message,
@@ -180,7 +183,7 @@ export function mapNotification(doc: {
   kind: Notification["kind"];
   workspaceId?: Types.ObjectId | null;
   conversationId: Types.ObjectId;
-  messageId: Types.ObjectId;
+  messageId?: Types.ObjectId | null;
   actorId: Types.ObjectId;
   readAt?: Date | null;
   createdAt: Date;
@@ -191,10 +194,28 @@ export function mapNotification(doc: {
     kind: doc.kind,
     workspaceId: doc.workspaceId ? doc.workspaceId.toString() : null,
     conversationId: doc.conversationId.toString(),
-    messageId: doc.messageId.toString(),
+    messageId: doc.messageId ? doc.messageId.toString() : null,
     actorId: doc.actorId.toString(),
     readAt: iso(doc.readAt),
     createdAt: doc.createdAt.toISOString(),
+  };
+}
+
+export function mapCallLog(doc: {
+  callId: Types.ObjectId;
+  logKind: CallLogPayload["logKind"];
+  type: CallLogPayload["type"];
+  durationSeconds?: number | null;
+  initiatedBy: Types.ObjectId;
+  mediaPath: CallLogPayload["mediaPath"];
+}): CallLogPayload {
+  return {
+    callId: doc.callId.toString(),
+    logKind: doc.logKind,
+    type: doc.type,
+    durationSeconds: doc.durationSeconds ?? null,
+    initiatedBy: doc.initiatedBy.toString(),
+    mediaPath: doc.mediaPath,
   };
 }
 
@@ -202,7 +223,9 @@ export function mapMessage(doc: {
   _id: Types.ObjectId;
   conversationId: Types.ObjectId;
   senderId: Types.ObjectId;
+  kind?: Message["kind"] | null;
   content?: string | null;
+  callLog?: Parameters<typeof mapCallLog>[0] | null;
   mentionedUserIds?: Types.ObjectId[];
   attachments?: Array<Parameters<typeof mapAttachment>[0]>;
   threadParentId?: Types.ObjectId | null;
@@ -219,7 +242,9 @@ export function mapMessage(doc: {
     id: doc._id.toString(),
     conversationId: doc.conversationId.toString(),
     senderId: doc.senderId.toString(),
+    kind: doc.kind ?? "user",
     content: deleted ? "" : (doc.content ?? ""),
+    callLog: deleted || !doc.callLog ? null : mapCallLog(doc.callLog),
     mentionedUserIds: (doc.mentionedUserIds ?? []).map((id) => id.toString()),
     attachments: deleted ? [] : (doc.attachments ?? []).map(mapAttachment),
     threadParentId: doc.threadParentId ? doc.threadParentId.toString() : null,
@@ -231,5 +256,73 @@ export function mapMessage(doc: {
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
     reactions: [],
+  };
+}
+
+export function mapCall(doc: {
+  _id: Types.ObjectId;
+  conversationId: Types.ObjectId;
+  workspaceId?: Types.ObjectId | null;
+  initiatedBy: Types.ObjectId;
+  type: Call["type"];
+  status: Call["status"];
+  mediaPath: Call["mediaPath"];
+  presenterUserId?: Types.ObjectId | null;
+  recording?: boolean;
+  startedAt?: Date | null;
+  endedAt?: Date | null;
+  endReason?: Call["endReason"];
+  ringTimeoutMs?: number;
+  clientNonce: string;
+  createdAt: Date;
+  updatedAt: Date;
+}): Call {
+  return {
+    id: doc._id.toString(),
+    conversationId: doc.conversationId.toString(),
+    workspaceId: doc.workspaceId ? doc.workspaceId.toString() : null,
+    initiatedBy: doc.initiatedBy.toString(),
+    type: doc.type,
+    status: doc.status,
+    mediaPath: doc.mediaPath,
+    presenterUserId: doc.presenterUserId ? doc.presenterUserId.toString() : null,
+    recording: Boolean(doc.recording),
+    startedAt: iso(doc.startedAt),
+    endedAt: iso(doc.endedAt),
+    endReason: doc.endReason ?? null,
+    ringTimeoutMs: doc.ringTimeoutMs ?? 30_000,
+    clientNonce: doc.clientNonce,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
+  };
+}
+
+export function mapCallParticipant(doc: {
+  _id: Types.ObjectId;
+  callId: Types.ObjectId;
+  userId: Types.ObjectId;
+  joinedAt?: Date | null;
+  leftAt?: Date | null;
+  isMuted?: boolean;
+  isVideoOn?: boolean;
+  isPresenting?: boolean;
+  handRaised?: boolean;
+  role: CallParticipant["role"];
+  createdAt: Date;
+  updatedAt: Date;
+}): CallParticipant {
+  return {
+    id: doc._id.toString(),
+    callId: doc.callId.toString(),
+    userId: doc.userId.toString(),
+    joinedAt: iso(doc.joinedAt),
+    leftAt: iso(doc.leftAt),
+    isMuted: Boolean(doc.isMuted),
+    isVideoOn: Boolean(doc.isVideoOn),
+    isPresenting: Boolean(doc.isPresenting),
+    handRaised: Boolean(doc.handRaised),
+    role: doc.role,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
   };
 }

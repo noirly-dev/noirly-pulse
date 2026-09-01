@@ -1,4 +1,4 @@
-import { cn } from "@/src/lib/cn";
+import { cn } from "@noirly-dev/ui";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).slice(0, 2);
@@ -25,7 +25,7 @@ export function Avatar({ name, src, size = "md", className }: Props) {
       <img
         src={src}
         alt=""
-        className={cn("object-cover", sizes[size], className)}
+        className={cn("rounded-full object-cover", sizes[size], className)}
       />
     );
   }
@@ -34,7 +34,7 @@ export function Avatar({ name, src, size = "md", className }: Props) {
     <span
       aria-hidden
       className={cn(
-        "inline-flex items-center justify-center bg-surface font-medium text-ink",
+        "inline-flex items-center justify-center rounded-full bg-[var(--surface-2)] font-medium text-[var(--foreground)]",
         sizes[size],
         className,
       )}

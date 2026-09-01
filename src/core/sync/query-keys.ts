@@ -11,4 +11,6 @@ export const qk = {
   notifications: ["notifications"] as const,
   channels: (workspaceId: string) => ["channels", workspaceId] as const,
   users: (q: string) => ["users", q] as const,
+  call: (callId: string) => ["call", callId] as const,
+  activeCall: (conversationId: string) => ["active-call", conversationId] as const,
 };

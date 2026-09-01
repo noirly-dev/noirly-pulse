@@ -1,0 +1,23 @@
+# Local noirly-sfu for Pulse group calls and screen share (Phase 2).
+# Usage:
+#   docker compose -f docker-compose.sfu.yml up --build
+# Then in .env.local:
+#   SFU_INTERNAL_URL=http://127.0.0.1:4002
+#   PULSE_SFU_SHARED_SECRET=dev-pulse-sfu-shared-secret-change-me
+services:
+  sfu:
+    build:
+      context: ../noirly-sfu
+      dockerfile: Dockerfile
+    ports:
+      - "4002:4002"
+      - "40000-40100:40000-40100/udp"
+    environment:
+      PORT: "4002"
+      PULSE_SFU_SHARED_SECRET: ${PULSE_SFU_SHARED_SECRET:-dev-pulse-sfu-shared-secret-change-me}
+      MEDIASOUP_LISTEN_IP: 0.0.0.0
+      MEDIASOUP_ANNOUNCED_IP: ${MEDIASOUP_ANNOUNCED_IP:-127.0.0.1}
+      MEDIASOUP_RTC_MIN_PORT: "40000"
+      MEDIASOUP_RTC_MAX_PORT: "40100"
+      REALTIME_INTERNAL_URL: ${REALTIME_INTERNAL_URL:-http://host.docker.internal:4001}
+      REALTIME_INTERNAL_SECRET: ${REALTIME_INTERNAL_SECRET:-dev-noirly-realtime-jwt-secret-change-me-32}

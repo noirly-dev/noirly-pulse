@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { User } from "@/src/core/models/types";
 import { useComposerStore } from "@/src/stores/ui-store";
-import { Button } from "@/src/ui/Button";
+import { Button } from "@noirly-dev/ui";
 
 type Props = {
   conversationId: string;
@@ -115,39 +115,39 @@ export function MessageComposer({
   }
 
   return (
-    <div className="relative border-t border-dashed border-hairline bg-canvas p-3">
+    <div className="relative border-t border border-[var(--hairline)] bg-background p-3">
       {mentionOptions.length > 0 ? (
-        <ul className="absolute bottom-full left-3 right-3 mb-1 max-h-40 overflow-y-auto border border-dashed border-hairline bg-surface py-1">
+        <ul className="absolute bottom-full left-3 right-3 mb-1 max-h-40 overflow-y-auto border border border-[var(--hairline)] bg-[var(--surface)] py-1">
           {mentionOptions.map((user) => (
             <li key={user.id}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-ink hover:text-canvas"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
                 onMouseDown={(event) => {
                   event.preventDefault();
                   insertMention(user);
                 }}
               >
                 <span>{user.displayName}</span>
-                <span className="text-xs text-muted">{user.email}</span>
+                <span className="text-xs text-muted-foreground">{user.email}</span>
               </button>
             </li>
           ))}
         </ul>
       ) : null}
       {files.length > 0 ? (
-        <ul className="mb-2 flex flex-wrap gap-2 text-xs text-muted">
+        <ul className="mb-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
           {files.map((file) => (
-            <li key={file.name} className="rounded bg-surface px-2 py-1">
+            <li key={file.name} className="rounded bg-[var(--surface)] px-2 py-1">
               {file.name}
             </li>
           ))}
         </ul>
       ) : null}
-      <div className="flex items-end gap-2 border border-dashed border-hairline bg-surface p-2">
+      <div className="flex items-end gap-2 border border border-[var(--hairline)] bg-[var(--surface)] p-2">
         <button
           type="button"
-          className="size-9 rounded-lg text-muted hover:bg-ink hover:text-canvas hover:text-ink"
+          className="size-9 rounded-lg text-muted-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)] hover:text-foreground"
           aria-label="Attach file"
           onClick={() => fileRef.current?.click()}
         >
@@ -172,7 +172,7 @@ export function MessageComposer({
           rows={1}
           placeholder="Message"
           aria-label="Message"
-          className="max-h-40 min-h-10 flex-1 resize-none bg-transparent py-2 text-sm text-ink outline-none placeholder:text-muted"
+          className="max-h-40 min-h-10 flex-1 resize-none bg-transparent py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
         />
         <Button
           className="h-9 px-3"
@@ -182,7 +182,7 @@ export function MessageComposer({
           Send
         </Button>
       </div>
-      <p className="mt-1 px-1 font-mono text-[10px] text-muted">
+      <p className="mt-1 px-1 font-mono text-[10px] text-muted-foreground">
         Enter to send · Shift+Enter for a new line · @ to mention
       </p>
     </div>

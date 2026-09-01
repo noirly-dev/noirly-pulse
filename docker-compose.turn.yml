@@ -1,0 +1,27 @@
+# Local coturn for Pulse 1:1 calls (Phase 1).
+# Usage:
+#   TURN_SECRET=dev-pulse-turn-secret docker compose -f docker-compose.turn.yml up
+# Then in .env.local:
+#   TURN_URLS=turn:127.0.0.1:3478?transport=udp
+#   TURN_SECRET=dev-pulse-turn-secret
+services:
+  coturn:
+    image: coturn/coturn:4.6.2
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "49152-49200:49152-49200/udp"
+    command:
+      - "-n"
+      - "--log-file=stdout"
+      - "--lt-cred-mech"
+      - "--fingerprint"
+      - "--use-auth-secret"
+      - "--static-auth-secret=${TURN_SECRET:-dev-pulse-turn-secret}"
+      - "--realm=pulse.noirly"
+      - "--listening-port=3478"
+      - "--min-port=49152"
+      - "--max-port=49200"
+      - "--no-cli"
+      - "--no-tls"
+      - "--no-dtls"

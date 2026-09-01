@@ -10,8 +10,8 @@ import { StartConversationDialog } from "@/src/features/chat/StartConversationDi
 import { api } from "@/src/lib/api-client";
 import { cn } from "@/src/lib/cn";
 import { useUnreadStore } from "@/src/stores/ui-store";
-import { Avatar } from "@/src/ui/Avatar";
-import { Badge } from "@/src/ui/Badge";
+import { Badge } from "@noirly-dev/ui";
+import { Avatar } from "@/src/components/Avatar";
 
 type Props = {
   currentUserId: string;
@@ -22,8 +22,8 @@ function itemClass(active: boolean) {
   return cn(
     "flex cursor-pointer items-center gap-2 px-3 py-2 text-sm",
     active
-      ? "bg-ink text-canvas"
-      : "text-muted hover:bg-ink hover:text-canvas",
+      ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+      : "text-muted-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]",
   );
 }
 
@@ -38,23 +38,23 @@ export function DmSidebar({ currentUserId, onNavigate }: Props) {
   const conversations = data?.conversations ?? [];
 
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col bg-canvas">
-      <div className="border-b border-dashed border-hairline px-4 py-4">
-        <p className="px-0 pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+    <aside className="flex w-[260px] shrink-0 flex-col bg-background">
+      <div className="border-b border border-[var(--hairline)] px-4 py-4">
+        <p className="px-0 pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           Direct messages
         </p>
         <div className="flex gap-px">
           <button
             type="button"
             onClick={() => setDialog("dm")}
-            className="flex-1 px-2 py-2 text-left text-sm text-ink hover:bg-ink hover:text-canvas"
+            className="flex-1 px-2 py-2 text-left text-sm text-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
           >
             New DM
           </button>
           <button
             type="button"
             onClick={() => setDialog("group")}
-            className="flex-1 px-2 py-2 text-left text-sm text-ink hover:bg-ink hover:text-canvas"
+            className="flex-1 px-2 py-2 text-left text-sm text-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
           >
             New group
           </button>
@@ -65,7 +65,7 @@ export function DmSidebar({ currentUserId, onNavigate }: Props) {
           Inbox
         </Link>
         {conversations.length === 0 ? (
-          <p className="px-3 py-6 text-sm text-muted">
+          <p className="px-3 py-6 text-sm text-muted-foreground">
             No conversations yet. Start a DM to message someone who has opened Pulse.
           </p>
         ) : (

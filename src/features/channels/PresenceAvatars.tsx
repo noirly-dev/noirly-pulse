@@ -2,7 +2,7 @@
 
 import { usePresence } from "@noirly-dev/realtime-client/react";
 import { pulseChannel } from "@/src/core/realtime/channels";
-import { Avatar } from "@/src/ui/Avatar";
+import { Avatar } from "@/src/components/Avatar";
 
 export function PresenceAvatars({ conversationId }: { conversationId: string }) {
   const { members } = usePresence(pulseChannel.conv(conversationId), {
@@ -22,7 +22,7 @@ export function PresenceAvatars({ conversationId }: { conversationId: string }) 
         />
       ))}
       {members.length > 5 ? (
-        <span className="flex size-8 items-center justify-center bg-surface text-[10px] text-muted ring-2 ring-canvas">
+        <span className="flex size-8 items-center justify-center bg-[var(--surface)] text-[10px] text-muted-foreground ring-2 ring-canvas">
           +{members.length - 5}
         </span>
       ) : null}

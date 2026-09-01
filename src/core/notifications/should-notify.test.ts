@@ -7,10 +7,9 @@ describe("shouldDeliverNotification", () => {
     expect(shouldDeliverNotification("none", "mention")).toBe(false);
   });
 
-  it("allows dm, mention, and thread_reply in mentions mode", () => {
-    expect(shouldDeliverNotification("mentions", "dm")).toBe(true);
-    expect(shouldDeliverNotification("mentions", "mention")).toBe(true);
-    expect(shouldDeliverNotification("mentions", "thread_reply")).toBe(true);
+  it("allows incoming and missed calls in mentions mode", () => {
+    expect(shouldDeliverNotification("mentions", "incoming_call")).toBe(true);
+    expect(shouldDeliverNotification("mentions", "missed_call")).toBe(true);
   });
 
   it("allows everything in all mode", () => {

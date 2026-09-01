@@ -11,7 +11,7 @@ export default async function WorkspaceHomePage({ params }: Params) {
 
   if (workspace.kind === "personal") {
     return (
-      <div className="p-6 text-sm text-muted">
+      <div className="p-6 text-sm text-muted-foreground">
         This personal workspace is a home icon only. Direct messages live under Personal.
       </div>
     );
@@ -19,9 +19,9 @@ export default async function WorkspaceHomePage({ params }: Params) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-dashed border-hairline px-6 py-4">
+      <div className="border-b border border-[var(--hairline)] px-6 py-4">
         <h1 className="font-display text-2xl font-bold tracking-[-0.04em] uppercase">{workspace.name}</h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-sm text-muted-foreground">
           Pick a channel from the sidebar or{" "}
           <Link href={`/w/${workspaceId}/search`} className="underline decoration-dashed underline-offset-4">
             search messages

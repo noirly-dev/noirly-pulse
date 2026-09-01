@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { qk } from "@/src/core/sync/query-keys";
 import { api } from "@/src/lib/api-client";
-import { Button } from "@/src/ui/Button";
-import { Dialog } from "@/src/ui/Dialog";
-import { Input } from "@/src/ui/Input";
+import { Button, Dialog, Input } from "@noirly-dev/ui";
 
 type Props = {
   open: boolean;
@@ -91,13 +89,13 @@ export function StartConversationDialog({ open, onClose, mode }: Props) {
                     type="button"
                     disabled={pending}
                     onClick={() => void start(user.id)}
-                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-ink hover:text-canvas"
+                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
                   >
                     <span>{user.displayName}</span>
-                    <span className="text-xs text-muted">{user.email}</span>
+                    <span className="text-xs text-muted-foreground">{user.email}</span>
                   </button>
                 ) : (
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-ink hover:text-canvas">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]">
                     <input
                       type="checkbox"
                       checked={checked}
@@ -110,14 +108,14 @@ export function StartConversationDialog({ open, onClose, mode }: Props) {
                       }
                     />
                     <span className="flex-1">{user.displayName}</span>
-                    <span className="text-xs text-muted">{user.email}</span>
+                    <span className="text-xs text-muted-foreground">{user.email}</span>
                   </label>
                 )}
               </li>
             );
           })}
         </ul>
-        {error ? <p className="text-sm text-ink">{error}</p> : null}
+        {error ? <p className="text-sm text-foreground">{error}</p> : null}
         {mode === "group" ? (
           <Button disabled={pending || selected.length < 2} onClick={() => void startGroup()}>
             Create group

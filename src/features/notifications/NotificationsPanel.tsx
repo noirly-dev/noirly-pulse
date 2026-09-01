@@ -22,20 +22,26 @@ export function NotificationsPanel() {
     <div className="mx-auto w-full max-w-2xl space-y-4 p-6">
       <h1 className="text-lg font-semibold">Notifications</h1>
       {items.length === 0 ? (
-        <p className="text-sm text-muted">No notifications yet.</p>
+        <p className="text-sm text-muted-foreground">No notifications yet.</p>
       ) : (
-        <ul className="divide-y divide-hairline border border-dashed border-hairline bg-surface">
+        <ul className="divide-y divide-[var(--hairline)] border border border-[var(--hairline)] bg-[var(--surface)]">
           {items.map((item) => (
             <li key={item.id} className="flex items-center gap-3 px-4 py-3 text-sm">
               <div className="min-w-0 flex-1">
-                <p className="capitalize text-ink">{item.kind.replace("_", " ")}</p>
+                <p className="capitalize text-foreground">
+                  {item.kind === "incoming_call"
+                    ? "Incoming call"
+                    : item.kind === "missed_call"
+                      ? "Missed call"
+                      : item.kind.replace("_", " ")}
+                </p>
                 <Link
                   href={
                     item.workspaceId
                       ? `/w/${item.workspaceId}/channel/${item.conversationId}`
                       : `/dm/${item.conversationId}`
                   }
-                  className="text-xs text-ink underline"
+                  className="text-xs text-foreground underline"
                 >
                   Open conversation
                 </Link>
@@ -43,7 +49,7 @@ export function NotificationsPanel() {
               {!item.readAt ? (
                 <button
                   type="button"
-                  className="text-xs text-muted hover:text-ink"
+                  className="text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => void markRead(item.id)}
                 >
                   Mark read

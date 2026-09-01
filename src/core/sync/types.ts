@@ -1,5 +1,6 @@
 import type {
   Attachment,
+  CallPublic,
   Conversation,
   ConversationSummary,
   Invite,
@@ -12,7 +13,24 @@ import type {
   WorkspaceMember,
   WorkspaceSummary,
 } from "@/src/core/models/types";
-import type { ChannelVisibility, ConversationKind, MemberRole } from "@/src/core/models/enums";
+import type {
+  CallType,
+  ChannelVisibility,
+  ConversationKind,
+  MemberRole,
+  NotificationPref,
+} from "@/src/core/models/enums";
+import type {
+  SfuConsumeResult,
+  SfuDtlsParameters,
+  SfuMediaKind,
+  SfuRoomSnapshot,
+  SfuRtpCapabilities,
+  SfuRtpParameters,
+  SfuTrackSource,
+  SfuTransportDirection,
+  SfuTransportInfo,
+} from "@/src/core/calls/sfu";
 
 export type PageCursor = {
   before?: string;
@@ -94,7 +112,7 @@ export interface PulseSyncProvider {
   listNotifications(cursor?: string): Promise<{ items: Notification[]; nextCursor: string | null }>;
   markNotificationsRead(ids: string[]): Promise<void>;
   updatePreferences(input: {
-    defaultNotificationPref?: import("@/src/core/models/enums").NotificationPref;
+    defaultNotificationPref?: NotificationPref;
   }): Promise<User>;
   updateConversationNotifications(
     conversationId: string,
@@ -113,4 +131,47 @@ export interface PulseSyncProvider {
     sizeBytes: number;
     body: Buffer;
   }): Promise<Attachment>;
+
+  createCall(input: {
+    conversationId: string;
+    type: CallType;
+    clientNonce: string;
+  }): Promise<CallPublic>;
+  getCall(callId: string): Promise<CallPublic>;
+  getActiveCall(conversationId: string): Promise<CallPublic | null>;
+  acceptCall(callId: string): Promise<CallPublic>;
+  declineCall(callId: string): Promise<CallPublic>;
+  endCall(callId: string): Promise<CallPublic>;
+  markCallConnected(callId: string): Promise<CallPublic>;
+  joinCall(callId: string): Promise<CallPublic>;
+  leaveCall(callId: string): Promise<CallPublic>;
+  upgradeCallToSfu(callId: string): Promise<CallPublic>;
+  setCallPresenter(callId: string, userId: string | null): Promise<CallPublic>;
+  muteCallParticipant(callId: string, targetUserId: string): Promise<CallPublic>;
+  sfuJoin(callId: string): Promise<Pick<SfuRoomSnapshot, "routerRtpCapabilities" | "producers">>;
+  sfuCreateTransport(callId: string, direction: SfuTransportDirection): Promise<SfuTransportInfo>;
+  sfuConnectTransport(
+    callId: string,
+    transportId: string,
+    dtlsParameters: SfuDtlsParameters,
+  ): Promise<void>;
+  sfuProduce(
+    callId: string,
+    input: {
+      transportId: string;
+      kind: SfuMediaKind;
+      rtpParameters: SfuRtpParameters;
+      source: SfuTrackSource;
+    },
+  ): Promise<{ producerId: string }>;
+  sfuConsume(
+    callId: string,
+    input: { producerId: string; rtpCapabilities: SfuRtpCapabilities },
+  ): Promise<SfuConsumeResult>;
+  sfuResumeConsumer(callId: string, consumerId: string): Promise<void>;
+  sfuSetConsumerLayers(
+    callId: string,
+    consumerId: string,
+    layers: { spatialLayer: number; temporalLayer?: number },
+  ): Promise<void>;
 }

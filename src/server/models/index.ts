@@ -12,3 +12,5 @@ export { Notification, type NotificationDocument } from "./Notification";
 export { Invite, type InviteDocument } from "./Invite";
 export { Upload, type UploadDocument } from "./Upload";
 export { PushSubscription, type PushSubscriptionDocument } from "./PushSubscription";
+export { Call, type CallDocument } from "./Call";
+export { CallParticipant, type CallParticipantDocument } from "./CallParticipant";

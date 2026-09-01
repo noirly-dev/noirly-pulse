@@ -13,7 +13,9 @@ function msg(partial: Partial<Message> & Pick<Message, "id" | "clientNonce">): M
   return {
     conversationId: "c1",
     senderId: "u1",
+    kind: "user",
     content: "hi",
+    callLog: null,
     mentionedUserIds: [],
     attachments: [],
     threadParentId: null,

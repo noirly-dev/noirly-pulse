@@ -9,7 +9,7 @@ import {
 } from "@noirly-dev/realtime-client/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import type { Message, Reaction, ReadReceipt } from "@/src/core/models/types";
+import type { CallPublic, Message, Reaction, ReadReceipt } from "@/src/core/models/types";
 import { pulseChannel } from "@/src/core/realtime/channels";
 import {
   appendMessage,
@@ -21,6 +21,7 @@ import {
 import { qk } from "@/src/core/sync/query-keys";
 import { api } from "@/src/lib/api-client";
 import { useTypingStore, useUnreadStore } from "@/src/stores/ui-store";
+import { useCallStore } from "@/src/stores/call-store";
 
 type Props = {
   conversationId: string;
@@ -175,6 +176,25 @@ export function ConversationRealtime({
       });
     },
   );
+
+  useRealtimeEvent<{ call: CallPublic }>(conv, "call.started", (data) => {
+    void queryClient.invalidateQueries({ queryKey: qk.activeCall(conversationId) });
+    void queryClient.setQueryData(qk.call(data.call.id), { call: data.call });
+  });
+
+  useRealtimeEvent<{ call: CallPublic }>(conv, "call.updated", (data) => {
+    void queryClient.setQueryData(qk.call(data.call.id), { call: data.call });
+    void queryClient.invalidateQueries({ queryKey: qk.activeCall(conversationId) });
+    const store = useCallStore.getState();
+    if (store.callId === data.call.id && store.currentUserId) {
+      store.hydratePeersFromCall(data.call, store.currentUserId);
+    }
+  });
+
+  useRealtimeEvent<{ call: CallPublic }>(conv, "call.ended", (data) => {
+    void queryClient.invalidateQueries({ queryKey: qk.activeCall(conversationId) });
+    useCallStore.getState().applyRemoteEnded(data.call.id);
+  });
 
   useRealtimeEvent<{ receipt: ReadReceipt }>(conv, "read.receipt", (data) => {
     queryClient.setQueryData(qk.conversation(conversationId), (old: unknown) => {

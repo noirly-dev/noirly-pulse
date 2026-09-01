@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     "@noirly-dev/realtime-client",
     "@noirly-dev/realtime-shared",
+    "@noirly-dev/ui",
   ],
 };
 

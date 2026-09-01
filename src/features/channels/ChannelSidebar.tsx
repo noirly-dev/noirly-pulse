@@ -10,7 +10,7 @@ import { useCan } from "@/src/features/workspace/WorkspaceRoleContext";
 import { api } from "@/src/lib/api-client";
 import { cn } from "@/src/lib/cn";
 import { useUnreadStore } from "@/src/stores/ui-store";
-import { Badge } from "@/src/ui/Badge";
+import { Badge } from "@noirly-dev/ui";
 
 type Props = {
   workspaceId: string;
@@ -21,8 +21,8 @@ function itemClass(active: boolean) {
   return cn(
     "flex cursor-pointer items-center gap-2 px-3 py-2 text-sm",
     active
-      ? "bg-ink text-canvas"
-      : "text-muted hover:bg-ink hover:text-canvas",
+      ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+      : "text-muted-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]",
   );
 }
 
@@ -39,16 +39,16 @@ export function ChannelSidebar({ workspaceId, onNavigate }: Props) {
   const channels = data?.channels ?? [];
 
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col bg-canvas">
-      <div className="border-b border-dashed border-hairline px-4 py-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+    <aside className="flex w-[260px] shrink-0 flex-col bg-background">
+      <div className="border-b border border-[var(--hairline)] px-4 py-4">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           Channels
         </p>
         {canCreate ? (
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
-            className="mt-2 w-full px-3 py-2 text-left text-sm text-ink hover:bg-ink hover:text-canvas"
+            className="mt-2 w-full px-3 py-2 text-left text-sm text-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
           >
             New channel
           </button>
@@ -76,9 +76,9 @@ export function ChannelSidebar({ workspaceId, onNavigate }: Props) {
         >
           Search
         </Link>
-        <div className="my-2 h-px border-t border-dashed border-hairline" />
+        <div className="my-2 h-px border-t border border-[var(--hairline)]" />
         {channels.length === 0 ? (
-          <p className="px-3 py-4 text-sm text-muted">
+          <p className="px-3 py-4 text-sm text-muted-foreground">
             No channels yet. Create one to start chatting with your team.
           </p>
         ) : (

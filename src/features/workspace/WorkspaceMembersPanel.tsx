@@ -6,9 +6,8 @@ import type { User } from "@/src/core/models/types";
 import { qk } from "@/src/core/sync/query-keys";
 import { useCan } from "@/src/features/workspace/WorkspaceRoleContext";
 import { api } from "@/src/lib/api-client";
-import { Button } from "@/src/ui/Button";
-import { Input } from "@/src/ui/Input";
-import { Avatar } from "@/src/ui/Avatar";
+import { Button, Input } from "@noirly-dev/ui";
+import { Avatar } from "@/src/components/Avatar";
 
 type Props = {
   workspaceId: string;
@@ -57,12 +56,12 @@ export function WorkspaceMembersPanel({ workspaceId, currentUserId }: Props) {
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-6">
       <div>
         <h1 className="text-lg font-semibold">Members</h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-sm text-muted-foreground">
           Invite teammates by email. If they already use Pulse, they join immediately.
         </p>
       </div>
       {canManage ? (
-        <div className="space-y-3 border border-dashed border-hairline bg-surface p-4">
+        <div className="space-y-3 border border border-[var(--hairline)] bg-[var(--surface)] p-4">
           <h2 className="text-sm font-medium">Invite by email</h2>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
@@ -74,7 +73,7 @@ export function WorkspaceMembersPanel({ workspaceId, currentUserId }: Props) {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as "admin" | "member")}
-              className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm"
+              className="rounded-lg border border-[var(--hairline)] bg-background px-3 py-2 text-sm"
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
@@ -83,25 +82,25 @@ export function WorkspaceMembersPanel({ workspaceId, currentUserId }: Props) {
               Invite
             </Button>
           </div>
-          {error ? <p className="text-sm text-ink">{error}</p> : null}
+          {error ? <p className="text-sm text-foreground">{error}</p> : null}
         </div>
       ) : null}
-      <ul className="divide-y divide-hairline border border-dashed border-hairline bg-surface">
+      <ul className="divide-y divide-[var(--hairline)] border border border-[var(--hairline)] bg-[var(--surface)]">
         {members.map(({ user, role: memberRole }) => (
           <li key={user.id} className="flex items-center gap-3 px-4 py-3">
             <Avatar name={user.displayName} src={user.avatarUrl} size="sm" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{user.displayName}</p>
-              <p className="truncate text-xs text-muted">{user.email}</p>
+              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
             </div>
-            <span className="rounded bg-canvas px-2 py-0.5 font-mono text-[10px] uppercase text-muted">
+            <span className="rounded bg-background px-2 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
               {memberRole}
             </span>
             {canManage && user.id !== currentUserId && memberRole !== "owner" ? (
               <div className="flex gap-1">
                 <button
                   type="button"
-                  className="text-xs text-muted hover:text-ink"
+                  className="text-xs text-muted-foreground hover:text-foreground"
                   onClick={() =>
                     void changeRole(user, memberRole === "admin" ? "member" : "admin")
                   }
@@ -110,7 +109,7 @@ export function WorkspaceMembersPanel({ workspaceId, currentUserId }: Props) {
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-ink"
+                  className="text-xs text-foreground"
                   onClick={() => void remove(user)}
                 >
                   Remove

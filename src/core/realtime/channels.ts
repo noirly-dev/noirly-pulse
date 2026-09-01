@@ -6,6 +6,7 @@ export const pulseChannel = {
   typing: (id: string) => assertChannelName(`ty:${id}`),
   workspace: (id: string) => assertChannelName(`ws:${id}`),
   inbox: (userId: string) => assertChannelName(`inbox:${userId}`),
+  call: (callId: string) => assertChannelName(`call:${callId}`),
 } as const;
 
 export type PulseChannelName = ChannelName;

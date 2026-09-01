@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { NotificationPref } from "@/src/core/models/enums";
 import { qk } from "@/src/core/sync/query-keys";
 import { api } from "@/src/lib/api-client";
-import { Button } from "@/src/ui/Button";
+import { Button } from "@noirly-dev/ui";
 
 const PREFS: Array<{ value: NotificationPref; label: string; description: string }> = [
   {
@@ -100,16 +100,16 @@ export function NotificationSettings() {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3 border border-dashed border-hairline bg-surface p-5">
-        <h2 className="text-sm font-semibold text-ink">Default notifications</h2>
-        <p className="text-sm text-muted">
+      <section className="space-y-3 border border border-[var(--hairline)] bg-[var(--surface)] p-5">
+        <h2 className="text-sm font-semibold text-foreground">Default notifications</h2>
+        <p className="text-sm text-muted-foreground">
           Applies to new conversations. Override per channel from channel settings later.
         </p>
         <div className="space-y-2">
           {PREFS.map((option) => (
             <label
               key={option.value}
-              className="flex cursor-pointer gap-3 border border-dashed border-hairline px-3 py-3 hover:bg-ink hover:text-canvas"
+              className="flex cursor-pointer gap-3 border border border-[var(--hairline)] px-3 py-3 hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
             >
               <input
                 type="radio"
@@ -119,32 +119,32 @@ export function NotificationSettings() {
                 className="mt-1 accent-ink"
               />
               <span>
-                <span className="block text-sm text-ink">{option.label}</span>
-                <span className="block text-xs text-muted">{option.description}</span>
+                <span className="block text-sm text-foreground">{option.label}</span>
+                <span className="block text-xs text-muted-foreground">{option.description}</span>
               </span>
             </label>
           ))}
         </div>
       </section>
 
-      <section className="space-y-3 border border-dashed border-hairline bg-surface p-5">
-        <h2 className="text-sm font-semibold text-ink">Browser push</h2>
+      <section className="space-y-3 border border border-[var(--hairline)] bg-[var(--surface)] p-5">
+        <h2 className="text-sm font-semibold text-foreground">Browser push</h2>
         {pushState === "unsupported" ? (
-          <p className="text-sm text-muted">Push is not supported in this browser.</p>
+          <p className="text-sm text-muted-foreground">Push is not supported in this browser.</p>
         ) : pushState === "denied" ? (
-          <p className="text-sm text-muted">
+          <p className="text-sm text-muted-foreground">
             Notifications are blocked. Enable them in your browser settings for this site.
           </p>
         ) : pushState === "on" ? (
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted">Push is enabled for mentions, DMs, and thread replies.</p>
+            <p className="text-sm text-muted-foreground">Push is enabled for mentions, DMs, and thread replies.</p>
             <Button variant="ghost" disabled={pushBusy} onClick={() => void disablePush()}>
               Disable
             </Button>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               Get notified when you are away from Pulse.
             </p>
             <Button disabled={pushBusy} onClick={() => void enablePush()}>

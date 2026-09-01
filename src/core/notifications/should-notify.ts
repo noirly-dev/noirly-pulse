@@ -7,7 +7,13 @@ export function shouldDeliverNotification(
 ): boolean {
   if (pref === "none") return false;
   if (pref === "mentions") {
-    return kind === "mention" || kind === "dm" || kind === "thread_reply";
+    return (
+      kind === "mention" ||
+      kind === "dm" ||
+      kind === "thread_reply" ||
+      kind === "incoming_call" ||
+      kind === "missed_call"
+    );
   }
   return true;
 }

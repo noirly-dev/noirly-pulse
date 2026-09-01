@@ -1,22 +1,7 @@
 import type { Metadata } from "next";
-import { Hanken_Grotesk, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { ThemeStyles, noirlyFontClassName } from "@noirly-dev/ui";
 import { AppProviders } from "@/src/components/AppProviders";
 import "./globals.css";
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space",
-  subsets: ["latin"],
-});
-
-const hankenGrotesk = Hanken_Grotesk({
-  variable: "--font-hanken",
-  subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Noirly Pulse",
@@ -46,9 +31,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} h-full min-h-dvh antialiased`}
+      className={`${noirlyFontClassName} dark h-full`}
+      data-theme="gold"
+      suppressHydrationWarning
     >
-      <body className="flex min-h-dvh flex-col bg-canvas font-sans text-ink">
+      <head>
+        <ThemeStyles themeId="gold" />
+      </head>
+      <body className="flex min-h-full flex-col">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

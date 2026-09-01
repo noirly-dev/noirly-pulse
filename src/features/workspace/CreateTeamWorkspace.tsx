@@ -34,7 +34,7 @@ export function CreateTeamWorkspace() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex size-10 items-center justify-center border border-dashed border-hairline text-lg text-muted hover:bg-ink hover:text-canvas"
+        className="flex size-10 items-center justify-center border border border-[var(--hairline)] text-lg text-muted-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
         aria-label="New team workspace"
         title="New team workspace"
       >
@@ -46,9 +46,9 @@ export function CreateTeamWorkspace() {
   return (
     <form
       onSubmit={onSubmit}
-      className="absolute left-16 top-20 z-50 w-64 border border-dashed border-hairline bg-surface p-3"
+      className="absolute left-16 top-20 z-50 w-64 border border border-[var(--hairline)] bg-[var(--surface)] p-3"
     >
-      <label className="block font-mono text-[10px] uppercase tracking-[0.16em] text-muted" htmlFor="team-name">
+      <label className="block font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground" htmlFor="team-name">
         Team name
       </label>
       <input
@@ -58,9 +58,9 @@ export function CreateTeamWorkspace() {
         placeholder="Marketing"
         required
         autoFocus
-        className="mt-2 h-8 w-full border border-dashed border-hairline bg-canvas px-2 text-xs text-ink outline-none"
+        className="mt-2 h-8 w-full border border border-[var(--hairline)] bg-background px-2 text-xs text-foreground outline-none"
       />
-      {error ? <p className="mt-2 text-xs text-ink">{error}</p> : null}
+      {error ? <p className="mt-2 text-xs text-foreground">{error}</p> : null}
       <div className="mt-2 flex gap-2">
         <button
           type="submit"
@@ -71,7 +71,7 @@ export function CreateTeamWorkspace() {
         </button>
         <button
           type="button"
-          className="h-8 border border-dashed border-hairline px-2 text-xs text-muted"
+          className="h-8 border border border-[var(--hairline)] px-2 text-xs text-muted-foreground"
           onClick={() => {
             setOpen(false);
             setError(null);

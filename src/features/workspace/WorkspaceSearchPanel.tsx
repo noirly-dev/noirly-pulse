@@ -6,7 +6,7 @@ import { useState } from "react";
 import { highlightTerms } from "@/src/core/search/highlight";
 import { qk } from "@/src/core/sync/query-keys";
 import { api } from "@/src/lib/api-client";
-import { Input } from "@/src/ui/Input";
+import { Input } from "@noirly-dev/ui";
 
 type Props = {
   workspaceId: string;
@@ -25,7 +25,7 @@ export function WorkspaceSearchPanel({ workspaceId }: Props) {
     <div className="mx-auto w-full max-w-2xl space-y-4 p-6">
       <div>
         <h1 className="text-lg font-semibold">Search</h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-sm text-muted-foreground">
           Search messages across channels you can access in this workspace.
         </p>
       </div>
@@ -35,7 +35,7 @@ export function WorkspaceSearchPanel({ workspaceId }: Props) {
         placeholder="Search messages…"
         autoFocus
       />
-      {isFetching ? <p className="text-sm text-muted">Searching…</p> : null}
+      {isFetching ? <p className="text-sm text-muted-foreground">Searching…</p> : null}
       <ul className="space-y-2">
         {hits.map((hit) => {
           const href = `/w/${workspaceId}/channel/${hit.conversationId}?msg=${hit.id}`;
@@ -43,9 +43,9 @@ export function WorkspaceSearchPanel({ workspaceId }: Props) {
             <li key={hit.id}>
               <Link
                 href={href}
-                className="block rounded-lg border border-hairline bg-surface px-4 py-3 text-sm transition hover:bg-ink hover:text-canvas"
+                className="block rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-sm transition hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
               >
-                <p className="font-mono text-[10px] text-muted">
+                <p className="font-mono text-[10px] text-muted-foreground">
                   #{hit.conversation.name ?? hit.conversation.slug}
                 </p>
                 <p className="mt-1 line-clamp-3 whitespace-pre-wrap">
@@ -53,7 +53,7 @@ export function WorkspaceSearchPanel({ workspaceId }: Props) {
                     segment.highlight ? (
                       <mark
                         key={`${hit.id}-${index}`}
-                        className="rounded bg-ink/25 text-ink"
+                        className="rounded bg-ink/25 text-foreground"
                       >
                         {segment.text}
                       </mark>
@@ -68,7 +68,7 @@ export function WorkspaceSearchPanel({ workspaceId }: Props) {
         })}
       </ul>
       {q.trim().length >= 2 && !isFetching && hits.length === 0 ? (
-        <p className="text-sm text-muted">No results.</p>
+        <p className="text-sm text-muted-foreground">No results.</p>
       ) : null}
     </div>
   );

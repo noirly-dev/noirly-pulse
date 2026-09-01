@@ -11,6 +11,7 @@ import { Conversation, ConversationMember, WorkspaceMember } from "@/src/server/
 import { canViewConversation } from "@/src/core/permissions/visibility";
 import { signRealtimeJwt } from "@/src/server/realtime/jwt";
 import { accessibleChannelIds } from "@/src/server/providers/workspace-helpers";
+import { listLiveCallCaps } from "@/src/server/providers/call-service";
 
 export async function GET(request: Request) {
   try {
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get("workspaceId");
     const conversationId = url.searchParams.get("conversationId");
+    const callId = url.searchParams.get("callId");
 
     const caps = await withDb(async () => {
       const next: Record<string, Array<"subscribe" | "publish" | "presence">> = {
@@ -92,6 +94,19 @@ export async function GET(request: Request) {
         }
         next[pulseChannel.conv(conversationId)] = ["subscribe", "presence"];
         next[pulseChannel.typing(conversationId)] = ["subscribe", "publish"];
+      }
+
+      const liveCallIds = await listLiveCallCaps(ctx.userId);
+      for (const id of liveCallIds) {
+        next[pulseChannel.call(id)] = ["subscribe", "publish", "presence"];
+      }
+      if (callId) {
+        if (!Types.ObjectId.isValid(callId)) {
+          throw new ApiError(400, "invalid_request", "Invalid callId");
+        }
+        if (liveCallIds.includes(callId)) {
+          next[pulseChannel.call(callId)] = ["subscribe", "publish", "presence"];
+        }
       }
 
       return next;

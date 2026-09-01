@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { cn } from "@/src/lib/cn";
-import { Badge } from "@/src/ui/Badge";
+import { Badge } from "@noirly-dev/ui";
 import type { WorkspaceSummary } from "@/src/core/models/types";
 import { CreateTeamWorkspace } from "@/src/features/workspace/CreateTeamWorkspace";
 
@@ -23,7 +23,7 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
   return (
     <nav
       aria-label="Workspaces"
-      className="relative flex w-16 shrink-0 flex-col items-center gap-2 border-r border-dashed border-hairline bg-canvas py-3"
+      className="relative flex w-16 shrink-0 flex-col items-center gap-2 border-r border border-[var(--hairline)] bg-background py-3"
     >
       <Link
         href="/inbox"
@@ -33,8 +33,8 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
         className={cn(
           "relative flex size-10 items-center justify-center text-sm font-semibold",
           activeId === "personal"
-            ? "bg-ink text-canvas"
-            : "text-muted hover:bg-ink hover:text-canvas",
+            ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+            : "text-muted-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]",
         )}
       >
         {glyph(personal?.name ?? "P")}
@@ -45,7 +45,7 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
         ) : null}
       </Link>
 
-      <div className="h-px w-8 border-t border-dashed border-hairline" />
+      <div className="h-px w-8 border-t border border-[var(--hairline)]" />
 
       {teams.map((workspace) => {
         const active = activeId === workspace.id;
@@ -59,8 +59,8 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
             className={cn(
               "relative flex size-10 items-center justify-center text-sm font-semibold",
               active
-                ? "bg-ink text-canvas"
-                : "text-muted hover:bg-ink hover:text-canvas",
+                ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                : "text-muted-foreground hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]",
             )}
           >
             {glyph(workspace.name)}

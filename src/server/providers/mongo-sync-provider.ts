@@ -62,6 +62,27 @@ import {
   requireWorkspaceMember,
   slugifyChannel,
 } from "@/src/server/providers/workspace-helpers";
+import {
+  acceptCallForUser,
+  createCallForUser,
+  declineCallForUser,
+  endCallForUser,
+  getActiveCallForUser,
+  getCallForUser,
+  joinCallForUser,
+  leaveCallForUser,
+  markCallConnectedForUser,
+  muteParticipantForUser,
+  setPresenterForUser,
+  sfuConnectTransportForUser,
+  sfuConsumeForUser,
+  sfuCreateTransportForUser,
+  sfuJoinForUser,
+  sfuProduceForUser,
+  sfuResumeConsumerForUser,
+  sfuSetConsumerLayersForUser,
+  upgradeCallToSfuForUser,
+} from "@/src/server/providers/call-service";
 
 type ProviderContext = { userId: string };
 
@@ -207,7 +228,7 @@ async function deliverNotification(opts: {
   targetUserId: string;
   kind: NotificationKind;
   conversationId: string;
-  messageId: string;
+  messageId: string | null;
   senderId: string;
   workspaceId: string | null;
   inboxEvent: string;
@@ -229,7 +250,7 @@ async function deliverNotification(opts: {
     kind: opts.kind,
     workspaceId: opts.workspaceId ? oid(opts.workspaceId) : null,
     conversationId: oid(opts.conversationId),
-    messageId: oid(opts.messageId),
+    messageId: opts.messageId ? oid(opts.messageId) : null,
     actorId: oid(opts.senderId),
   });
   if (opts.kind !== "dm") {
@@ -1088,6 +1109,9 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
         if (message.senderId.toString() !== userId) {
           throw new ApiError(403, "forbidden", "You can only edit your own messages");
         }
+        if ((message.kind ?? "user") === "call_log") {
+          throw new ApiError(400, "invalid_request", "Call log entries cannot be edited");
+        }
         message.content = sanitizeMessageContent(content);
         message.editedAt = new Date();
         await message.save();
@@ -1420,6 +1444,64 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
           height: null,
         };
       });
+    },
+
+    async createCall(input) {
+      return withDb(() => createCallForUser(userId, input));
+    },
+    async getCall(callId) {
+      return withDb(() => getCallForUser(userId, callId));
+    },
+    async getActiveCall(conversationId) {
+      return withDb(() => getActiveCallForUser(userId, conversationId));
+    },
+    async acceptCall(callId) {
+      return withDb(() => acceptCallForUser(userId, callId));
+    },
+    async declineCall(callId) {
+      return withDb(() => declineCallForUser(userId, callId));
+    },
+    async endCall(callId) {
+      return withDb(() => endCallForUser(userId, callId));
+    },
+    async markCallConnected(callId) {
+      return withDb(() => markCallConnectedForUser(userId, callId));
+    },
+    async joinCall(callId) {
+      return withDb(() => joinCallForUser(userId, callId));
+    },
+    async leaveCall(callId) {
+      return withDb(() => leaveCallForUser(userId, callId));
+    },
+    async upgradeCallToSfu(callId) {
+      return withDb(() => upgradeCallToSfuForUser(userId, callId));
+    },
+    async setCallPresenter(callId, targetUserId) {
+      return withDb(() => setPresenterForUser(userId, callId, targetUserId));
+    },
+    async muteCallParticipant(callId, targetUserId) {
+      return withDb(() => muteParticipantForUser(userId, callId, targetUserId));
+    },
+    async sfuJoin(callId) {
+      return withDb(() => sfuJoinForUser(userId, callId));
+    },
+    async sfuCreateTransport(callId, direction) {
+      return withDb(() => sfuCreateTransportForUser(userId, callId, direction));
+    },
+    async sfuConnectTransport(callId, transportId, dtlsParameters) {
+      return withDb(() => sfuConnectTransportForUser(userId, callId, transportId, dtlsParameters));
+    },
+    async sfuProduce(callId, input) {
+      return withDb(() => sfuProduceForUser(userId, callId, input));
+    },
+    async sfuConsume(callId, input) {
+      return withDb(() => sfuConsumeForUser(userId, callId, input));
+    },
+    async sfuResumeConsumer(callId, consumerId) {
+      return withDb(() => sfuResumeConsumerForUser(userId, callId, consumerId));
+    },
+    async sfuSetConsumerLayers(callId, consumerId, layers) {
+      return withDb(() => sfuSetConsumerLayersForUser(userId, callId, consumerId, layers));
     },
   };
 }

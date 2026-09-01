@@ -8,27 +8,27 @@ export default async function SettingsPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-10">
       <div>
-        <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-muted">
+        <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-muted-foreground">
           Account
         </p>
         <h1 className="text-perforated mt-2 font-display text-5xl font-bold tracking-[-0.05em] uppercase">
           Settings
         </h1>
       </div>
-      <dl className="space-y-3 border border-dashed border-hairline bg-surface p-5 text-sm">
+      <dl className="space-y-3 border border border-[var(--hairline)] bg-[var(--surface)] p-5 text-sm">
         <div>
-          <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">Name</dt>
-          <dd className="mt-1 text-ink">{ctx.displayName}</dd>
+          <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Name</dt>
+          <dd className="mt-1 text-foreground">{ctx.displayName}</dd>
         </div>
         <div>
-          <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">Email</dt>
-          <dd className="mt-1 text-ink">{ctx.email}</dd>
+          <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Email</dt>
+          <dd className="mt-1 text-foreground">{ctx.email}</dd>
         </div>
         <div>
-          <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+          <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Default notification mode
           </dt>
-          <dd className="mt-1 capitalize text-ink">{user.defaultNotificationPref}</dd>
+          <dd className="mt-1 capitalize text-foreground">{user.defaultNotificationPref}</dd>
         </div>
       </dl>
       <NotificationSettings />

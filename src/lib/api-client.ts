@@ -1,5 +1,6 @@
 import type {
   Attachment,
+  CallPublic,
   Channel,
   ConversationSummary,
   Message,
@@ -12,6 +13,17 @@ import type {
   WorkspaceSummary,
 } from "@/src/core/models/types";
 import type { MessagePage } from "@/src/core/sync/types";
+import type {
+  SfuConsumeResult,
+  SfuDtlsParameters,
+  SfuMediaKind,
+  SfuRoomSnapshot,
+  SfuRtpCapabilities,
+  SfuRtpParameters,
+  SfuTrackSource,
+  SfuTransportDirection,
+  SfuTransportInfo,
+} from "@/src/core/calls/sfu";
 
 type ApiErrorBody = { error?: string; message?: string };
 
@@ -254,5 +266,110 @@ export const api = {
       method: "POST",
       body,
     });
+  },
+  createCall(body: { conversationId: string; type: "audio" | "video"; clientNonce: string }) {
+    return request<{ call: CallPublic }>("/api/calls", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+  getCall(callId: string) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}`);
+  },
+  getActiveCall(conversationId: string) {
+    return request<{ call: CallPublic | null }>(`/api/conversations/${conversationId}/call`);
+  },
+  acceptCall(callId: string) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}/accept`, { method: "POST" });
+  },
+  declineCall(callId: string) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}/decline`, { method: "POST" });
+  },
+  endCall(callId: string) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}/end`, { method: "POST" });
+  },
+  markCallConnected(callId: string) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}/connected`, { method: "POST" });
+  },
+  joinCall(callId: string) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}/join`, { method: "POST" });
+  },
+  leaveCall(callId: string) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}/leave`, { method: "POST" });
+  },
+  upgradeCallToSfu(callId: string) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}/upgrade-sfu`, { method: "POST" });
+  },
+  setCallPresenter(callId: string, userId: string | null) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}/presenter`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  },
+  muteCallParticipant(callId: string, targetUserId: string) {
+    return request<{ call: CallPublic }>(`/api/calls/${callId}/participants/${targetUserId}/mute`, {
+      method: "POST",
+    });
+  },
+  sfuJoin(callId: string) {
+    return request<Pick<SfuRoomSnapshot, "routerRtpCapabilities" | "producers">>(
+      `/api/calls/${callId}/sfu/join`,
+      { method: "POST" },
+    );
+  },
+  sfuCreateTransport(callId: string, direction: SfuTransportDirection) {
+    return request<SfuTransportInfo>(`/api/calls/${callId}/sfu/transport`, {
+      method: "POST",
+      body: JSON.stringify({ direction }),
+    });
+  },
+  sfuConnectTransport(callId: string, transportId: string, dtlsParameters: SfuDtlsParameters) {
+    return request<{ ok: true }>(`/api/calls/${callId}/sfu/transport/${transportId}/connect`, {
+      method: "POST",
+      body: JSON.stringify({ dtlsParameters }),
+    });
+  },
+  sfuProduce(
+    callId: string,
+    input: {
+      transportId: string;
+      kind: SfuMediaKind;
+      rtpParameters: SfuRtpParameters;
+      source: SfuTrackSource;
+    },
+  ) {
+    return request<{ producerId: string }>(`/api/calls/${callId}/sfu/produce`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  },
+  sfuConsume(
+    callId: string,
+    input: { producerId: string; rtpCapabilities: SfuRtpCapabilities },
+  ) {
+    return request<SfuConsumeResult>(`/api/calls/${callId}/sfu/consume`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  },
+  sfuResumeConsumer(callId: string, consumerId: string) {
+    return request<{ ok: true }>(`/api/calls/${callId}/sfu/consumer/${consumerId}/resume`, {
+      method: "POST",
+    });
+  },
+  sfuSetConsumerLayers(
+    callId: string,
+    consumerId: string,
+    layers: { spatialLayer: number; temporalLayer?: number },
+  ) {
+    return request<{ ok: true }>(`/api/calls/${callId}/sfu/consumer/${consumerId}/layers`, {
+      method: "POST",
+      body: JSON.stringify(layers),
+    });
+  },
+  iceServers() {
+    return request<{ iceServers: Array<{ urls: string | string[]; username?: string; credential?: string }> }>(
+      "/api/calls/ice",
+    );
   },
 };

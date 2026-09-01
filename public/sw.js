@@ -7,6 +7,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(payload.title ?? "Noirly Pulse", {
       body: payload.body ?? "",
       data: { url: payload.url ?? "/" },
+      tag: payload.url ?? "pulse",
     }),
   );
 });

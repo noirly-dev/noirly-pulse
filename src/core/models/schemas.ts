@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { CHANNEL_VISIBILITIES, MEMBER_ROLES, NOTIFICATION_PREFS } from "./enums";
+import {
+  CALL_TYPES,
+  CHANNEL_VISIBILITIES,
+  MEMBER_ROLES,
+  NOTIFICATION_PREFS,
+} from "./enums";
 
 export const createWorkspaceSchema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -86,4 +91,41 @@ export const pushSubscribeSchema = z.object({
     p256dh: z.string().min(1),
     auth: z.string().min(1),
   }),
+});
+
+export const createCallSchema = z.object({
+  conversationId: z.string().min(1),
+  type: z.enum(CALL_TYPES),
+  clientNonce: z.string().min(8).max(80),
+});
+
+const jsonObject = z.record(z.string(), z.unknown());
+
+export const setCallPresenterSchema = z.object({
+  userId: z.string().min(1).nullable(),
+});
+
+export const sfuTransportSchema = z.object({
+  direction: z.enum(["send", "recv"]),
+});
+
+export const sfuConnectTransportSchema = z.object({
+  dtlsParameters: jsonObject,
+});
+
+export const sfuProduceSchema = z.object({
+  transportId: z.string().min(1),
+  kind: z.enum(["audio", "video"]),
+  rtpParameters: jsonObject,
+  source: z.enum(["mic", "camera", "screen"]),
+});
+
+export const sfuConsumeSchema = z.object({
+  producerId: z.string().min(1),
+  rtpCapabilities: jsonObject,
+});
+
+export const sfuConsumerLayersSchema = z.object({
+  spatialLayer: z.number().int().min(0),
+  temporalLayer: z.number().int().min(0).optional(),
 });
