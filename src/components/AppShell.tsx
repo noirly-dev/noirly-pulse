@@ -31,24 +31,7 @@ type Props = {
 };
 
 const pulseLogo = (
-  <>
-    <Image
-      src="/logo-light.png"
-      alt=""
-      width={40}
-      height={40}
-      className="h-full w-full rounded-lg border border-[var(--hairline)] dark:hidden"
-      priority
-    />
-    <Image
-      src="/logo-dark.png"
-      alt=""
-      width={40}
-      height={40}
-      className="hidden h-full w-full rounded-lg border border-[var(--hairline)] dark:block"
-      priority
-    />
-  </>
+  <span className="font-mono text-xs font-bold tracking-[0.08em]">NP</span>
 );
 
 export function AppShell({ user, workspaces, children }: Props) {
