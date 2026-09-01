@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, type ReactNode } from "react";
-import { AppShell as NoirlyAppShell } from "@noirly-dev/ui";
+import { useEffect, type ReactNode } from "react";
+import { AppShell as NoirlyAppShell, SidebarBrand } from "@noirly-dev/ui";
 import type { WorkspaceSummary } from "@/src/core/models/types";
 import { CallMediaProvider } from "@/src/features/calls/CallMediaProvider";
 import { SignOutButton } from "@/src/features/auth/SignOutButton";
@@ -29,6 +29,27 @@ type Props = {
   workspaces: WorkspaceSummary[];
   children: ReactNode;
 };
+
+const pulseLogo = (
+  <>
+    <Image
+      src="/logo-light.png"
+      alt=""
+      width={40}
+      height={40}
+      className="h-full w-full rounded-lg border border-[var(--hairline)] dark:hidden"
+      priority
+    />
+    <Image
+      src="/logo-dark.png"
+      alt=""
+      width={40}
+      height={40}
+      className="hidden h-full w-full rounded-lg border border-[var(--hairline)] dark:block"
+      priority
+    />
+  </>
+);
 
 export function AppShell({ user, workspaces, children }: Props) {
   const pathname = usePathname();
@@ -60,16 +81,6 @@ export function AppShell({ user, workspaces, children }: Props) {
 
   const realtimeEnabled = Boolean(process.env.NEXT_PUBLIC_REALTIME_WS_URL);
 
-  const sidebarClassName = useMemo(
-    () =>
-      [
-        "w-auto max-w-none border-r border-[var(--hairline)] [&>nav]:hidden",
-        "[&>div:first-child]:flex [&>div:first-child]:min-h-0 [&>div:first-child]:flex-1 [&>div:first-child]:flex-col",
-        onChat ? "max-lg:hidden" : "",
-      ].join(" "),
-    [onChat],
-  );
-
   return (
     <>
       {realtimeEnabled ? <InboxRealtime userId={user.id} /> : null}
@@ -85,54 +96,38 @@ export function AppShell({ user, workspaces, children }: Props) {
         avatarUrl={user.avatarUrl}
       >
         <NoirlyAppShell
+          contentClassName={
+            onChat ? "h-full min-h-0 flex flex-col overflow-hidden p-0" : undefined
+          }
           sidebar={{
-            className: sidebarClassName,
+            className:
+              "w-auto max-w-none [&>nav]:hidden [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:overflow-hidden [&>div:nth-child(2)]:shrink",
             brand: (
-              <div className="-m-6 flex min-h-0 flex-1 flex-col">
-                <div className="border-b border-[var(--hairline)] p-6">
-                  <div className="flex items-center gap-3">
-                    <Image
-                      src="/logo-light.png"
-                      alt=""
-                      width={40}
-                      height={40}
-                      className="h-10 w-10 rounded-lg border border-[var(--hairline)] dark:hidden"
-                      priority
-                    />
-                    <Image
-                      src="/logo-dark.png"
-                      alt=""
-                      width={40}
-                      height={40}
-                      className="hidden h-10 w-10 rounded-lg border border-[var(--hairline)] dark:block"
-                      priority
-                    />
-                    <p className="font-display text-lg font-semibold tracking-tight">
-                      Noirly Pulse
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
-                    className="mt-3 flex w-full cursor-pointer items-center justify-between rounded-xl border border-[var(--hairline)] bg-[var(--surface-2)] px-3 py-2 text-left text-sm text-[var(--muted-foreground)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
-                  >
-                    <span>Search</span>
-                    <span className="font-mono text-[10px]">⌘K</span>
-                  </button>
-                </div>
-                <div className="flex min-h-0 flex-1">
-                  <WorkspaceRail
-                    workspaces={workspaces}
-                    activeId={activeId}
-                    onNavigate={() => undefined}
-                  />
-                  <ConversationSidebar
-                    mode={mode}
-                    workspaceId={workspaceMatch ?? undefined}
-                    currentUserId={user.id}
-                    onNavigate={() => undefined}
-                  />
-                </div>
+              <div className="space-y-3">
+                <SidebarBrand logo={pulseLogo} title="Noirly Pulse" />
+                <button
+                  type="button"
+                  onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
+                  className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-[var(--hairline)] bg-[var(--surface-2)] px-3 py-2 text-left text-sm text-[var(--muted-foreground)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
+                >
+                  <span>Search</span>
+                  <span className="font-mono text-[10px]">⌘K</span>
+                </button>
+              </div>
+            ),
+            children: (
+              <div className="flex min-h-0 flex-1">
+                <WorkspaceRail
+                  workspaces={workspaces}
+                  activeId={activeId}
+                  onNavigate={() => undefined}
+                />
+                <ConversationSidebar
+                  mode={mode}
+                  workspaceId={workspaceMatch ?? undefined}
+                  currentUserId={user.id}
+                  onNavigate={() => undefined}
+                />
               </div>
             ),
             items: [],

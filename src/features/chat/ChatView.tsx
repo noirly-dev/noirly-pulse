@@ -106,7 +106,7 @@ export function ChatView({
           avatarUrl={avatarUrl}
         />
       ) : null}
-      <header className="flex items-center gap-3 border-b border border-[var(--hairline)] px-4 py-3">
+      <header className="flex items-center gap-3 border-b border border-[var(--hairline)] px-4 py-3 sm:px-6">
         <Link href={backHref} className="text-sm text-muted-foreground md:hidden">
           Back
         </Link>

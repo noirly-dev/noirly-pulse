@@ -15,8 +15,8 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0
       '@noirly-dev/ui':
-        specifier: ^0.1.0
-        version: 0.1.0(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(lucide-react@0.544.0(react@19.2.8))(next@16.3.1(@babel/core@7.29.7)(@playwright/test@1.62.1)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)
+        specifier: file:../noirly-ui/packages/ui
+        version: file:../noirly-ui/packages/ui(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(lucide-react@0.544.0(react@19.2.8))(next@16.3.1(@babel/core@7.29.7)(@playwright/test@1.62.1)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)
       '@tanstack/react-query':
         specifier: ^5.101.4
         version: 5.101.4(react@19.2.8)
@@ -540,8 +540,8 @@ packages:
   '@noirly-dev/realtime-shared@0.1.0':
     resolution: {integrity: sha512-JQ/sBClK7kKZ5qwr9MLx93DsYcMdUldCd7sQsz+xOOOm2Jv1Zic7Dqvbu+OnNXPSjNvSIFQhHXcugnBFAOVA2g==, tarball: https://npm.pkg.github.com/download/@noirly-dev/realtime-shared/0.1.0/f9f8461c12bf2bba256c0c927251c823ec39418d}
 
-  '@noirly-dev/ui@0.1.0':
-    resolution: {integrity: sha512-/qP2JhV2SpmtJdF7YT3gRi2+xbrbzn0/vqU6M0KetyDcuk0QvU0m9zyPG+ekoJMylZNjZRTCPZTcssyGEA50rA==, tarball: https://npm.pkg.github.com/download/@noirly-dev/ui/0.1.0/1a88954187553f6030998cbab2a4fc4b3a9cd770}
+  '@noirly-dev/ui@file:../noirly-ui/packages/ui':
+    resolution: {directory: ../noirly-ui/packages/ui, type: directory}
     peerDependencies:
       lucide-react: '>=0.400.0'
       next: '>=16'
@@ -3399,7 +3399,7 @@ snapshots:
 
   '@noirly-dev/realtime-shared@0.1.0': {}
 
-  '@noirly-dev/ui@0.1.0(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(lucide-react@0.544.0(react@19.2.8))(next@16.3.1(@babel/core@7.29.7)(@playwright/test@1.62.1)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)':
+  '@noirly-dev/ui@file:../noirly-ui/packages/ui(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(lucide-react@0.544.0(react@19.2.8))(next@16.3.1(@babel/core@7.29.7)(@playwright/test@1.62.1)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)':
     dependencies:
       '@radix-ui/react-slot': 1.3.3(@types/react@19.2.18)(react@19.2.8)
       '@radix-ui/react-switch': 1.3.7(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
