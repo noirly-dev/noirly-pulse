@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @source "../node_modules/@noirly-dev/ui/dist";
 @import "@noirly-dev/ui/styles.css";
+/* Pointer spotlight, card tilt, branded cursor. */
+@import "@noirly-dev/ui/effects.css";
+/* Route shutter. */
+@import "@noirly-dev/ui/transitions.css";
+/* Lenis owns the document scroller; this sizes it correctly. */
+@import "lenis/dist/lenis.css";
 
 :root {
   --call-canvas: #121212;
