@@ -31,6 +31,14 @@ export async function GET(_request: Request, { params }: Params) {
       return upload;
     });
 
+    if (
+      file.url.startsWith("http://") ||
+      file.url.startsWith("https://") ||
+      file.storagePath.startsWith("r2:")
+    ) {
+      return Response.redirect(file.url, 302);
+    }
+
     const bytes = await readFile(file.storagePath);
     return new Response(bytes, {
       headers: {

@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Types, type PipelineStage } from "mongoose";
+import { canWriteToR2, uploadBuffer } from "@/src/server/storage/r2";
 import type { ChannelVisibility, MemberRole, NotificationKind } from "@/src/core/models/enums";
 import type {
   Attachment,
@@ -1418,11 +1419,27 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
         }
         const kind = file.mime.startsWith("image/") ? "image" : "file";
         const id = new Types.ObjectId();
-        const dir = path.join(process.cwd(), ".uploads");
-        await mkdir(dir, { recursive: true });
-        const storagePath = path.join(dir, id.toString());
-        await writeFile(storagePath, file.body);
-        const url = `/api/uploads/${id.toString()}/file`;
+
+        let storagePath: string;
+        let url: string;
+
+        if (canWriteToR2()) {
+          const uploaded = await uploadBuffer(
+            file.body,
+            file.filename || "upload",
+            file.mime,
+            "pulse/uploads",
+          );
+          storagePath = `r2:${uploaded.key}`;
+          url = uploaded.publicUrl;
+        } else {
+          const dir = path.join(process.cwd(), ".uploads");
+          await mkdir(dir, { recursive: true });
+          storagePath = path.join(dir, id.toString());
+          await writeFile(storagePath, file.body);
+          url = `/api/uploads/${id.toString()}/file`;
+        }
+
         await Upload.create({
           _id: id,
           userId: oid(userId),
