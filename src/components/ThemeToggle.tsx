@@ -1,0 +1,64 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Moon, Sun } from "lucide-react";
+import { DURATION, EASE_OUT, SPRING } from "@noirly-dev/ui/motion";
+import { cn } from "@noirly-dev/ui";
+
+const THEME_STORAGE_KEY = "theme";
+
+type Props = {
+  className?: string;
+  /** Compact for AppShell (h-14); default matches marketing / portfolio. */
+  size?: "sm" | "md";
+};
+
+export function ThemeToggle({ className, size = "md" }: Props) {
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setIsDark((prev) => {
+      const next = !prev;
+      document.documentElement.classList.toggle("dark", next);
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, next ? "dark" : "light");
+      } catch {
+        /* private mode — class swap still applies for this session */
+      }
+      return next;
+    });
+  }, []);
+
+  return (
+    <motion.button
+      type="button"
+      onClick={toggleTheme}
+      whileTap={{ scale: 0.9 }}
+      transition={SPRING}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      className={cn(
+        "relative flex items-center justify-center overflow-hidden rounded-full border border-[var(--hairline)] text-[var(--text-secondary)] transition-colors hover:border-[var(--hairline-strong)] hover:text-[var(--text)]",
+        size === "sm" ? "h-9 w-9" : "h-11 w-11",
+        className,
+      )}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={isDark ? "sun" : "moon"}
+          initial={{ y: 14, opacity: 0, rotate: -45 }}
+          animate={{ y: 0, opacity: 1, rotate: 0 }}
+          exit={{ y: -14, opacity: 0, rotate: 45 }}
+          transition={{ duration: DURATION.base, ease: EASE_OUT }}
+          className="absolute inline-flex"
+        >
+          {isDark ? <Sun size={size === "sm" ? 15 : 16} /> : <Moon size={size === "sm" ? 15 : 16} />}
+        </motion.span>
+      </AnimatePresence>
+    </motion.button>
+  );
+}

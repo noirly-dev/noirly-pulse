@@ -8,9 +8,18 @@ export const proxy = auth((request) => {
   const isLoginPopup =
     pathname === "/login/popup" || pathname === "/login/popup-complete";
   const isAuthApi = pathname.startsWith("/api/auth");
-  const isPublicApi = pathname === "/api/health";
+  // Brand logo and other APIs authenticate themselves; do not bounce unsigned
+  // visitors (or BrandMark) through /login.
+  const isApi = pathname.startsWith("/api/");
 
-  if (!request.auth && !isLanding && !isLogin && !isLoginPopup && !isAuthApi && !isPublicApi) {
+  if (
+    !request.auth &&
+    !isLanding &&
+    !isLogin &&
+    !isLoginPopup &&
+    !isAuthApi &&
+    !isApi
+  ) {
     const login = new URL("/login", request.nextUrl.origin);
     if (pathname !== "/") {
       login.searchParams.set("next", pathname);

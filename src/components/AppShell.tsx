@@ -1,10 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { AppShell as NoirlyAppShell, SidebarBrand } from "@noirly-dev/ui";
 import type { WorkspaceSummary } from "@/src/core/models/types";
+import { BrandMark } from "@/src/components/BrandMark";
+import { ThemeControls } from "@/src/components/ThemeControls";
 import { CallMediaProvider } from "@/src/features/calls/CallMediaProvider";
 import { SignOutButton } from "@/src/features/auth/SignOutButton";
 import { CommandPalette } from "@/src/features/command-palette/CommandPalette";
@@ -29,10 +30,6 @@ type Props = {
   workspaces: WorkspaceSummary[];
   children: ReactNode;
 };
-
-const pulseLogo = (
-  <span className="font-mono text-xs font-bold tracking-[0.08em]">NP</span>
-);
 
 export function AppShell({ user, workspaces, children }: Props) {
   const pathname = usePathname();
@@ -87,7 +84,10 @@ export function AppShell({ user, workspaces, children }: Props) {
               "w-auto max-w-none [&>nav]:hidden [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:overflow-hidden [&>div:nth-child(2)]:shrink",
             brand: (
               <div className="space-y-3">
-                <SidebarBrand logo={pulseLogo} title="Noirly Pulse" />
+                <SidebarBrand
+                  logo={<BrandMark className="h-8 w-8" />}
+                  title="Noirly Pulse"
+                />
                 <button
                   type="button"
                   onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
@@ -128,32 +128,22 @@ export function AppShell({ user, workspaces, children }: Props) {
           }}
           header={{
             brand: (
-              <div className="flex items-center gap-3">
-                <Image
-                  src="/logo-light.png"
-                  alt=""
-                  width={28}
-                  height={28}
-                  className="h-7 w-7 dark:hidden"
-                />
-                <Image
-                  src="/logo-dark.png"
-                  alt=""
-                  width={28}
-                  height={28}
-                  className="hidden h-7 w-7 dark:block"
-                />
+              <div className="flex items-center gap-2.5">
+                <BrandMark className="h-7 w-7" />
                 <p className="font-display text-sm font-semibold tracking-tight">Pulse</p>
               </div>
             ),
             actions: (
-              <button
-                type="button"
-                onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
-                className="cursor-pointer rounded-lg border border-[var(--hairline)] px-3 py-1.5 font-mono text-sm text-[var(--muted-foreground)]"
-              >
-                ⌘K
-              </button>
+              <>
+                <ThemeControls size="sm" />
+                <button
+                  type="button"
+                  onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
+                  className="cursor-pointer rounded-lg border border-[var(--hairline)] px-3 py-1.5 font-mono text-sm text-[var(--muted-foreground)]"
+                >
+                  ⌘K
+                </button>
+              </>
             ),
           }}
         >

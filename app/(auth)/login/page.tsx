@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AuthShell } from "@noirly-dev/ui";
+import { BrandMark } from "@/src/components/BrandMark";
 import { NoirlyLoginButton } from "@/src/features/auth/NoirlyLoginButton";
 
 export const metadata: Metadata = {
@@ -17,10 +19,22 @@ export default async function LoginPage({
 
   return (
     <AuthShell
+      logo={<BrandMark className="h-14 w-14 brand-mark--on-surface" />}
       title="Sign in to Pulse"
-      lead="Use your Noirly account. Email, Google, and verification are handled by Noirly Identity."
+      lead="Email, Google and verification are handled by Noirly Identity. No separate password to remember."
+      footer={
+        <>
+          New here?{" "}
+          <Link href="/" className="text-[var(--accent)] hover:underline">
+            See what Pulse does
+          </Link>
+        </>
+      }
     >
-      <NoirlyLoginButton redirectTo={redirectTo} />
+      <div className="flex flex-col gap-4">
+        <NoirlyLoginButton redirectTo={redirectTo} />
+        <p className="meta text-center">Opens Identity in a secure popup</p>
+      </div>
     </AuthShell>
   );
 }

@@ -31,6 +31,8 @@ export type BootstrappedAccount = {
   };
 };
 
+const ACTIVITY_THROTTLE_MS = 5 * 60 * 1000;
+
 function slugify(input: string): string {
   const base = input
     .toLowerCase()
@@ -80,6 +82,12 @@ async function ensurePersonalWorkspace(
   return workspace;
 }
 
+/**
+ * Resolve the Pulse user + personal workspace for an Identity session.
+ *
+ * Hot path is read-only. Writes only when the account is missing, profile
+ * fields changed, or lastSeenAt is older than five minutes.
+ */
 export async function ensurePulseAccount(
   sessionUser: BootstrapSessionUser,
 ): Promise<BootstrappedAccount> {
@@ -92,29 +100,47 @@ export async function ensurePulseAccount(
       sessionUser.email?.trim().toLowerCase() || `${sessionUser.id}@users.local`;
     const displayName =
       sessionUser.name?.trim() || email.split("@")[0] || "Noirly user";
+    const avatarUrl = sessionUser.image ?? null;
+    const emailVerified = Boolean(sessionUser.email);
 
-    const user = await PulseUser.findOneAndUpdate(
-      { identitySub: sessionUser.id },
-      {
-        $set: {
-          email,
-          displayName,
-          avatarUrl: sessionUser.image ?? null,
-          emailVerified: Boolean(sessionUser.email),
-          lastSeenAt: new Date(),
-        },
-        $setOnInsert: {
-          identitySub: sessionUser.id,
-        },
-      },
-      { upsert: true, returnDocument: "after" },
-    );
+    let user = await PulseUser.findOne({ identitySub: sessionUser.id });
 
     if (!user) {
-      throw new Error("Failed to upsert Pulse user");
-    }
+      user = await PulseUser.create({
+        identitySub: sessionUser.id,
+        email,
+        displayName,
+        avatarUrl,
+        emailVerified,
+        lastSeenAt: new Date(),
+      });
+      await acceptPendingInvites(user._id.toString(), email);
+    } else {
+      const lastSeen = user.lastSeenAt ? new Date(user.lastSeenAt).getTime() : 0;
+      const needsActivity = Date.now() - lastSeen > ACTIVITY_THROTTLE_MS;
+      const needsUpdate =
+        user.email !== email ||
+        user.displayName !== displayName ||
+        (user.avatarUrl ?? null) !== avatarUrl ||
+        user.emailVerified !== emailVerified;
 
-    await acceptPendingInvites(user._id.toString(), email);
+      if (needsUpdate || needsActivity) {
+        if (needsUpdate) {
+          user.email = email;
+          user.displayName = displayName;
+          user.avatarUrl = avatarUrl;
+          user.emailVerified = emailVerified;
+        }
+        if (needsActivity) {
+          user.lastSeenAt = new Date();
+        }
+        await user.save();
+      }
+
+      if (needsUpdate) {
+        await acceptPendingInvites(user._id.toString(), email);
+      }
+    }
 
     const workspace = await ensurePersonalWorkspace(user);
 
