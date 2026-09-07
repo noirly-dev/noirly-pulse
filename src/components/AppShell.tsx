@@ -85,7 +85,7 @@ export function AppShell({ user, workspaces, children }: Props) {
             brand: (
               <div className="space-y-3">
                 <SidebarBrand
-                  logo={<BrandMark className="h-8 w-8" />}
+                  logo={<BrandMark className="size-full" />}
                   title="Noirly Pulse"
                 />
                 <button
