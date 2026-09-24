@@ -322,6 +322,8 @@ export function ConversationRealtime({
       void catchUp();
       void queryClient.invalidateQueries({ queryKey: ["conversations"] });
     }
+    // Runs on status transitions only; catchUp reads the latest cache itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, conversationId]);
 
   return null;
