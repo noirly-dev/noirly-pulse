@@ -1024,7 +1024,13 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
         const threadParentId = input.threadParentId ? oid(input.threadParentId) : null;
         if (threadParentId) {
           const parent = await MessageModel.findById(threadParentId).lean();
-          if (!parent || parent.conversationId.toString() !== input.conversationId) {
+          if (
+            !parent ||
+            parent.conversationId.toString() !== input.conversationId ||
+            // Threads are one level deep and hang off live root messages (§3.2).
+            parent.threadParentId ||
+            parent.deletedAt
+          ) {
             throw new ApiError(400, "invalid_request", "Invalid thread parent");
           }
         }
@@ -1217,13 +1223,33 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
           throw new ApiError(400, "invalid_request", "Invalid message");
         }
         const now = new Date();
-        await ConversationMember.findOneAndUpdate(
-          { conversationId: oid(conversationId), userId: oid(userId) },
+        // Monotonic: a stale tab must never move the read pointer backwards.
+        const updated = await ConversationMember.findOneAndUpdate(
+          {
+            conversationId: oid(conversationId),
+            userId: oid(userId),
+            $or: [
+              { lastReadMessageId: null },
+              { lastReadMessageId: { $lt: oid(lastReadMessageId) } },
+            ],
+          },
           {
             lastReadMessageId: oid(lastReadMessageId),
             lastReadAt: now,
           },
         );
+        if (!updated) {
+          const member = await ConversationMember.findOne({
+            conversationId: oid(conversationId),
+            userId: oid(userId),
+          }).lean();
+          return {
+            conversationId,
+            userId,
+            lastReadMessageId: member?.lastReadMessageId?.toString() ?? lastReadMessageId,
+            timestamp: (member?.lastReadAt ?? now).toISOString(),
+          };
+        }
         const receipt = {
           conversationId,
           userId,

@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  useChannel,
   usePresence,
   useRealtimeClient,
   useRealtimeEvent,
   useRealtimeStatus,
 } from "@noirly-dev/realtime-client/react";
+import { useChannel } from "@/src/features/realtime/useChannel";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { CallPublic, Message, Reaction, ReadReceipt } from "@/src/core/models/types";
 import { pulseChannel } from "@/src/core/realtime/channels";
 import {
@@ -45,10 +45,17 @@ export function ConversationRealtime({
   const queryClient = useQueryClient();
   const conv = pulseChannel.conv(conversationId);
   const ty = pulseChannel.typing(conversationId);
-  const stored =
-    typeof window === "undefined" ? null : window.sessionStorage.getItem(eidKey(conv));
+  // Read once per conversation: a changing lastEventId option would resubscribe.
+  const stored = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return window.sessionStorage.getItem(eidKey(conv));
+    } catch {
+      return null;
+    }
+  }, [conv]);
 
-  const { lastEventId } = useChannel(conv, {
+  const { lastEventId, status: convStatus } = useChannel(conv, {
     presence: true,
     lastEventId: stored ?? undefined,
     replayLimit: 100,
@@ -57,26 +64,40 @@ export function ConversationRealtime({
 
   const { join, leave } = usePresence(conv, { collapseByUserId: true });
 
-  // Presence is rebuilt from join snapshots after every (re)connect, so join on
-  // each transition to "ready" (§5.7). Joining earlier rejects "not connected".
+  // Presence is rebuilt from join snapshots after every (re)subscribe, so join
+  // each time the conv channel is subscribed (§5.7). Joining before the
+  // subscription is acknowledged is rejected by the server ("not subscribed").
   useEffect(() => {
-    if (status !== "ready") return;
+    if (convStatus !== "subscribed") return;
     join({ displayName, avatarUrl }).catch(() => undefined);
     return () => {
       leave().catch(() => undefined);
     };
-  }, [status, join, leave, displayName, avatarUrl]);
+  }, [convStatus, join, leave, displayName, avatarUrl]);
 
   useEffect(() => {
-    if (lastEventId) window.sessionStorage.setItem(eidKey(conv), lastEventId);
+    if (!lastEventId) return;
+    try {
+      window.sessionStorage.setItem(eidKey(conv), lastEventId);
+    } catch {
+      /* storage unavailable */
+    }
   }, [conv, lastEventId]);
 
+  /** Patch every loaded list for this conversation (root + open threads). */
   function patchMessages(updater: (data: MessagesInfinite | undefined) => MessagesInfinite) {
-    queryClient.setQueryData<MessagesInfinite>(qk.messages(conversationId, "root"), updater);
+    queryClient.setQueriesData<MessagesInfinite>(
+      { queryKey: ["messages", conversationId] },
+      (old) => (old ? updater(old) : old),
+    );
   }
 
   useRealtimeEvent<{ message: Message }>(conv, "message.sent", (data) => {
-    patchMessages((old) => appendMessage(old, data.message));
+    // Thread replies belong to the thread list only, never the channel root.
+    queryClient.setQueryData<MessagesInfinite>(
+      qk.messages(conversationId, data.message.threadParentId ?? "root"),
+      (old) => appendMessage(old, data.message),
+    );
     void queryClient.invalidateQueries({ queryKey: qk.conversations("personal") });
     if (data.message.senderId !== currentUserId) {
       useTypingStore.getState().onStop(conversationId, data.message.senderId, null);

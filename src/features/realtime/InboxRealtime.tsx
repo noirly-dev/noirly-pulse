@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  useChannel,
   useRealtimeClient,
   useRealtimeStatus,
 } from "@noirly-dev/realtime-client/react";
+import { useChannel } from "@/src/features/realtime/useChannel";
 import { useEffect } from "react";
 import { pulseChannel } from "@/src/core/realtime/channels";
 import { ConnectionBanner } from "@/src/features/realtime/ConnectionBanner";

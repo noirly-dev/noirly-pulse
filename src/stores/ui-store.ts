@@ -5,10 +5,15 @@ type UIState = {
   commandPaletteOpen: boolean;
   setCommandPaletteOpen: (open: boolean) => void;
   toggleCommandPalette: () => void;
+  /** Message asked to enter edit mode (the `E` shortcut). */
+  editMessageId: string | null;
+  setEditMessageId: (id: string | null) => void;
 };
 
 export const useUIStore = create<UIState>((set) => ({
   commandPaletteOpen: false,
+  editMessageId: null,
+  setEditMessageId: (id) => set({ editMessageId: id }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   toggleCommandPalette: () =>
     set((state) => ({ commandPaletteOpen: !state.commandPaletteOpen })),
@@ -61,6 +66,13 @@ export const useTypingStore = create<TypingStore>((set) => ({
   pruneExpired: () =>
     set((state) => {
       const now = Date.now();
+      const anyExpired = Object.values(state.byConv).some(
+        (users) =>
+          Object.keys(users).length === 0 ||
+          Object.values(users).some((value) => value.expiresAt <= now),
+      );
+      // Runs every second; keep the same reference when nothing changed.
+      if (!anyExpired) return state;
       const byConv: TypingStore["byConv"] = {};
       for (const [convId, users] of Object.entries(state.byConv)) {
         const next: Record<string, TypingState> = {};

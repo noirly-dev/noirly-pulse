@@ -9,7 +9,7 @@ export default async function MobileThreadPage({ params }: Params) {
   const members = await sync.listMembers(workspaceId);
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col md:hidden">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
       <ChatView
         conversationId={channelId}
         currentUserId={ctx.userId}

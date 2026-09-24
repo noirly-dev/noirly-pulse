@@ -23,6 +23,9 @@ type Props = {
   highlightMessageId?: string | null;
   canModerate?: boolean;
   onOpenThread?: (messageId: string) => void;
+  /** Called with the newest visible message id while pinned + tab visible. */
+  onReadable?: (messageId: string) => void;
+  onLastOwnChange?: (messageId: string | null) => void;
 };
 
 function receiptFor(
@@ -40,6 +43,23 @@ function receiptFor(
   return other.lastReadMessageId >= message.id ? "seen" : "delivered";
 }
 
+/** Group DMs show "Seen by N" on the latest own message only (§11.5). */
+function seenByFor(
+  message: Message,
+  conversation: ConversationSummary,
+  currentUserId: string,
+  isLastOwn: boolean,
+): number {
+  if (conversation.kind !== "group_dm" || !isLastOwn || message.localStatus) return 0;
+  return conversation.members.filter(
+    (m) =>
+      m.id !== currentUserId &&
+      m.lastReadMessageId !== null &&
+      m.lastReadMessageId !== undefined &&
+      m.lastReadMessageId >= message.id,
+  ).length;
+}
+
 export function MessageList({
   conversation,
   currentUserId,
@@ -47,6 +67,8 @@ export function MessageList({
   highlightMessageId = null,
   canModerate = false,
   onOpenThread,
+  onReadable,
+  onLastOwnChange,
 }: Props) {
   const queryClient = useQueryClient();
   const scroller = useRef<HTMLDivElement>(null);
@@ -84,7 +106,44 @@ export function MessageList({
     return map;
   }, [conversation.members]);
 
-  const lastOwnId = [...messages].reverse().find((m) => m.senderId === currentUserId)?.id;
+  const lastOwnId = [...messages]
+    .reverse()
+    .find((m) => m.senderId === currentUserId && !m.deletedAt && !m.localStatus && m.kind !== "call_log")?.id;
+  useEffect(() => {
+    onLastOwnChange?.(lastOwnId ?? null);
+  }, [lastOwnId, onLastOwnChange]);
+
+  // Freeze my read pointer as of opening so the separator does not chase reads.
+  const [openedLastRead] = useState(
+    () => conversation.members.find((m) => m.id === currentUserId)?.lastReadMessageId ?? null,
+  );
+  const firstUnreadId = useMemo(() => {
+    if (threadParentId) return null;
+    const first = messages.find(
+      (m) =>
+        m.senderId !== currentUserId &&
+        !m.id.startsWith("tmp-") &&
+        (openedLastRead === null || m.id > openedLastRead),
+    );
+    // Everything unread (never opened): no separator above the very first message.
+    return first && first.id !== messages[0]?.id ? first.id : null;
+  }, [messages, openedLastRead, currentUserId, threadParentId]);
+
+  function reportRead() {
+    if (!onReadable || !pin.current) return;
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+    const newest = [...messages].reverse().find((m) => !m.id.startsWith("tmp-"));
+    if (newest) onReadable(newest.id);
+  }
+
+  useEffect(() => {
+    reportRead();
+    function onVisible() {
+      if (document.visibilityState === "visible") reportRead();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  });
 
   const virtualizer = useVirtualizer({
     count: messages.length,
@@ -120,7 +179,10 @@ export function MessageList({
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     pin.current = nearBottom;
-    if (nearBottom) setPendingNew(0);
+    if (nearBottom) {
+      setPendingNew(0);
+      reportRead();
+    }
     if (el.scrollTop < 80 && query.hasNextPage && !query.isFetchingNextPage) {
       const previous = el.scrollHeight;
       await query.fetchNextPage();
@@ -231,8 +293,20 @@ export function MessageList({
                 }}
                 className={highlighted ? "ring-1 ring-ink/60" : undefined}
               >
+                {message.id === firstUnreadId ? (
+                  <div
+                    role="separator"
+                    aria-label="New messages"
+                    className="my-2 flex items-center gap-3 px-4 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--accent)]"
+                  >
+                    <span className="h-px flex-1 bg-[var(--accent)]/40" />
+                    New
+                    <span className="h-px flex-1 bg-[var(--accent)]/40" />
+                  </div>
+                ) : null}
                 <MessageBubble
                   message={message}
+                  currentUserId={currentUserId}
                   mine={message.senderId === currentUserId}
                   sender={membersById.get(message.senderId)}
                   showAvatar={showAvatar}
@@ -242,6 +316,13 @@ export function MessageList({
                     currentUserId,
                     message.id === lastOwnId,
                   )}
+                  seenBy={seenByFor(
+                    message,
+                    conversation,
+                    currentUserId,
+                    message.id === lastOwnId,
+                  )}
+                  animateIn={pin.current}
                   canModerate={canModerate}
                   onRetry={() => retry(message)}
                   onDiscard={() =>
