@@ -300,7 +300,11 @@ export function MessageBubble({
               className="text-muted-foreground hover:text-foreground"
               onClick={() => onOpenThread(message.id)}
             >
-              {message.replyCount > 0 ? `${message.replyCount} replies` : "Reply in thread"}
+              {message.replyCount === 1
+                ? "1 reply"
+                : message.replyCount > 1
+                  ? `${message.replyCount} replies`
+                  : "Reply in thread"}
             </button>
           ) : null}
         </div>

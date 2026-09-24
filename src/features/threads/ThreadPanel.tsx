@@ -95,7 +95,7 @@ export function ThreadPanel({
           workspaceId={workspaceId}
           backHref={backHref}
           mentionCandidates={mentionCandidates}
-          realtime={false}
+          embedded
         />
       </div>
     </aside>

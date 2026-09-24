@@ -39,8 +39,11 @@ type Props = {
   mentionCandidates?: User[];
   onOpenThread?: (messageId: string) => void;
   canModerate?: boolean;
-  /** Nested thread panels reuse the parent view's realtime subscription. */
-  realtime?: boolean;
+  /**
+   * Rendered inside a thread side panel: the parent view already owns the
+   * header and the realtime subscription.
+   */
+  embedded?: boolean;
 };
 
 export function ChatView({
@@ -54,7 +57,7 @@ export function ChatView({
   mentionCandidates = [],
   onOpenThread,
   canModerate = false,
-  realtime = true,
+  embedded = false,
 }: Props) {
   const searchParams = useSearchParams();
   const highlightMessageId = searchParams.get("msg");
@@ -125,7 +128,7 @@ export function ChatView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {realtimeEnabled && realtime ? (
+      {realtimeEnabled && !embedded ? (
         <ConversationRealtime
           conversationId={conversationId}
           currentUserId={currentUserId}
@@ -133,7 +136,7 @@ export function ChatView({
           avatarUrl={avatarUrl}
         />
       ) : null}
-      <header className="flex items-center gap-3 border-b border border-[var(--hairline)] px-4 py-3 sm:px-6">
+      <header hidden={embedded} className="flex items-center gap-3 border-b border border-[var(--hairline)] px-4 py-3 sm:px-6">
         <Link href={backHref} className="text-sm text-muted-foreground md:hidden">
           Back
         </Link>
@@ -310,12 +313,20 @@ function ThreadParent({
   threadParentId: string;
   members: ConversationSummary["members"];
 }) {
+  // Shaped like the message lists and keyed under ["messages", conv] so the
+  // realtime patchers (edit, delete, thread.updated) keep it current.
   const { data } = useQuery({
-    queryKey: ["thread-parent", conversationId, threadParentId],
-    queryFn: () => api.listMessages(conversationId, { anchorMessageId: threadParentId, limit: 1 }),
-    staleTime: 30_000,
+    queryKey: ["messages", conversationId, `parent:${threadParentId}`],
+    queryFn: async (): Promise<MessagesInfinite> => {
+      const page = await api.listMessages(conversationId, {
+        anchorMessageId: threadParentId,
+        limit: 1,
+      });
+      return { pages: [page], pageParams: [undefined] };
+    },
+    staleTime: Infinity,
   });
-  const parent = data?.messages.find((m) => m.id === threadParentId);
+  const parent = data?.pages[0]?.messages.find((m) => m.id === threadParentId);
   if (!parent) return null;
   const sender = members.find((m) => m.id === parent.senderId);
   return (
