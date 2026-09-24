@@ -69,8 +69,17 @@ export function ConversationRealtime({
   // subscription is acknowledged is rejected by the server ("not subscribed").
   useEffect(() => {
     if (convStatus !== "subscribed") return;
-    join({ displayName, avatarUrl }).catch(() => undefined);
+    let cancelled = false;
+    // After a reconnect the client restores subscriptions asynchronously, so a
+    // join can briefly race "not subscribed"; retry a few times.
+    const attempt = (n: number) => {
+      join({ displayName, avatarUrl }).catch(() => {
+        if (!cancelled && n < 3) window.setTimeout(() => attempt(n + 1), 400 * (n + 1));
+      });
+    };
+    attempt(0);
     return () => {
+      cancelled = true;
       leave().catch(() => undefined);
     };
   }, [convStatus, join, leave, displayName, avatarUrl]);
@@ -275,7 +284,8 @@ export function ConversationRealtime({
       await queryClient.invalidateQueries({ queryKey: qk.messages(conversationId, "root") });
       return;
     }
-    const page = await api.listMessages(conversationId, { after, limit: 100 });
+    const page = await api.listMessages(conversationId, { after, limit: 100 }).catch(() => null);
+    if (!page) return;
     queryClient.setQueryData<MessagesInfinite>(qk.messages(conversationId, "root"), (old) => {
       let next = old;
       for (const message of page.messages) {
@@ -292,6 +302,14 @@ export function ConversationRealtime({
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [conversationId]);
+
+  // History is fetched over REST before the subscription is acknowledged; merge
+  // anything sent in that window (and after any resubscribe) so it is not lost
+  // until the next refresh (§5.7).
+  useEffect(() => {
+    if (convStatus === "subscribed") void catchUp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [convStatus, conversationId]);
 
   // After a dropped connection comes back, merge anything missed (§11.9).
   const prevStatus = useRef(status);
