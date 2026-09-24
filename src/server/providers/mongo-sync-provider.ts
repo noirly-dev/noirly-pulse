@@ -191,6 +191,8 @@ async function toSummary(
     const filter: Record<string, unknown> = {
       conversationId: conversation._id,
       senderId: { $ne: oid(userId) },
+      // Badges count the root timeline; thread replies notify separately.
+      threadParentId: null,
       deletedAt: null,
     };
     if (mine.lastReadAt) {
@@ -203,6 +205,7 @@ async function toSummary(
     ...mapConversation(conversation),
     unreadCount,
     members,
+    myNotifications: (mine?.notifications as import("@/src/core/models/enums").NotificationPref | undefined) ?? "all",
   };
 }
 
@@ -791,6 +794,8 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
 
     async updateChannel(id, input) {
       return withDb(async () => {
+        // Private channels 404 for non-members, admins included (§9.2).
+        await assertConversationAccess(userId, id);
         const conversation = await Conversation.findById(id);
         if (!conversation || conversation.archivedAt || conversation.kind !== "channel") {
           throw new ApiError(404, "not_found", "Channel not found");
@@ -814,6 +819,8 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
 
     async archiveChannel(id) {
       return withDb(async () => {
+        // Private channels 404 for non-members, admins included (§9.2).
+        await assertConversationAccess(userId, id);
         const conversation = await Conversation.findById(id);
         if (!conversation || conversation.archivedAt || conversation.kind !== "channel") {
           throw new ApiError(404, "not_found", "Channel not found");
@@ -833,6 +840,7 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
 
     async addChannelMembers(conversationId, userIds) {
       return withDb(async () => {
+        await assertConversationAccess(userId, conversationId);
         const conversation = await Conversation.findById(conversationId).lean();
         if (!conversation || conversation.archivedAt || conversation.kind !== "channel") {
           throw new ApiError(404, "not_found", "Channel not found");
@@ -863,6 +871,7 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
 
     async removeChannelMember(conversationId, targetUserId) {
       return withDb(async () => {
+        await assertConversationAccess(userId, conversationId);
         const conversation = await Conversation.findById(conversationId).lean();
         if (!conversation || conversation.archivedAt || conversation.kind !== "channel") {
           throw new ApiError(404, "not_found", "Channel not found");
@@ -872,10 +881,16 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
         }
         const workspaceId = conversation.workspaceId!.toString();
         const role = await requireWorkspaceMember(userId, workspaceId);
-        requirePermission(role, "channel.manage");
+        // Anyone may leave; removing someone else needs channel.manage.
+        if (targetUserId !== userId) requirePermission(role, "channel.manage");
         await ConversationMember.deleteOne({
           conversationId: oid(conversationId),
           userId: oid(targetUserId),
+        });
+        await publishRealtime({
+          channel: pulseChannel.workspace(workspaceId),
+          event: "member.left",
+          data: { userId: targetUserId, conversationId },
         });
       });
     },
@@ -1024,7 +1039,13 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
         const threadParentId = input.threadParentId ? oid(input.threadParentId) : null;
         if (threadParentId) {
           const parent = await MessageModel.findById(threadParentId).lean();
-          if (!parent || parent.conversationId.toString() !== input.conversationId) {
+          if (
+            !parent ||
+            parent.conversationId.toString() !== input.conversationId ||
+            // Threads are one level deep and hang off live root messages (§3.2).
+            parent.threadParentId ||
+            parent.deletedAt
+          ) {
             throw new ApiError(400, "invalid_request", "Invalid thread parent");
           }
         }
@@ -1217,13 +1238,33 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
           throw new ApiError(400, "invalid_request", "Invalid message");
         }
         const now = new Date();
-        await ConversationMember.findOneAndUpdate(
-          { conversationId: oid(conversationId), userId: oid(userId) },
+        // Monotonic: a stale tab must never move the read pointer backwards.
+        const updated = await ConversationMember.findOneAndUpdate(
+          {
+            conversationId: oid(conversationId),
+            userId: oid(userId),
+            $or: [
+              { lastReadMessageId: null },
+              { lastReadMessageId: { $lt: oid(lastReadMessageId) } },
+            ],
+          },
           {
             lastReadMessageId: oid(lastReadMessageId),
             lastReadAt: now,
           },
         );
+        if (!updated) {
+          const member = await ConversationMember.findOne({
+            conversationId: oid(conversationId),
+            userId: oid(userId),
+          }).lean();
+          return {
+            conversationId,
+            userId,
+            lastReadMessageId: member?.lastReadMessageId?.toString() ?? lastReadMessageId,
+            timestamp: (member?.lastReadAt ?? now).toISOString(),
+          };
+        }
         const receipt = {
           conversationId,
           userId,
@@ -1252,8 +1293,11 @@ export function createMongoSyncProvider({ userId }: ProviderContext): PulseSyncP
           allowedIds = await accessibleChannelIds(userId, input.workspaceId);
         } else {
           const memberships = await ConversationMember.find({ userId: oid(userId) }).lean();
+          // Personal scope is DMs + group DMs only (§12.1). Channel memberships
+          // can outlive workspace membership, so never search them here.
           const convs = await Conversation.find({
             _id: { $in: memberships.map((m) => m.conversationId) },
+            kind: { $in: ["dm", "group_dm"] },
             archivedAt: null,
           }).lean();
           allowedIds = convs

@@ -1,6 +1,9 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { qk } from "@/src/core/sync/query-keys";
+import { api } from "@/src/lib/api-client";
 import { cn } from "@/src/lib/cn";
 import { Badge } from "@noirly-dev/ui";
 import type { WorkspaceSummary } from "@/src/core/models/types";
@@ -16,7 +19,16 @@ type Props = {
   onNavigate?: () => void;
 };
 
-export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
+export function WorkspaceRail({ workspaces: initial, activeId, onNavigate }: Props) {
+  // Seeded by the server layout, then kept live: read receipts and inbox.*
+  // events invalidate qk.workspaces so rail badges track unread (§9.4).
+  const { data } = useQuery({
+    queryKey: qk.workspaces,
+    queryFn: () => api.listWorkspaces(),
+    initialData: { workspaces: initial },
+    staleTime: 15_000,
+  });
+  const workspaces = data.workspaces;
   const personal = workspaces.find((w) => w.kind === "personal");
   const teams = workspaces.filter((w) => w.kind === "team");
 
@@ -39,7 +51,7 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
       >
         {glyph(personal?.name ?? "P")}
         {personal && personal.unreadCount > 0 ? (
-          <Badge className="absolute -right-1 -top-1 min-w-4 px-1">
+          <Badge aria-hidden className="absolute -right-1 -top-1 min-w-4 px-1">
             {personal.unreadCount > 99 ? "99+" : personal.unreadCount}
           </Badge>
         ) : null}
@@ -54,7 +66,11 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
             key={workspace.id}
             href={`/w/${workspace.id}`}
             onClick={onNavigate}
-            aria-label={workspace.name}
+            aria-label={
+              workspace.unreadCount > 0
+                ? `${workspace.name}, ${workspace.unreadCount} unread`
+                : workspace.name
+            }
             aria-current={active ? "page" : undefined}
             className={cn(
               "relative flex size-10 items-center justify-center text-sm font-semibold",
@@ -65,7 +81,7 @@ export function WorkspaceRail({ workspaces, activeId, onNavigate }: Props) {
           >
             {glyph(workspace.name)}
             {workspace.unreadCount > 0 ? (
-              <Badge className="absolute -right-1 -top-1 min-w-4 px-1">
+              <Badge aria-hidden className="absolute -right-1 -top-1 min-w-4 px-1">
                 {workspace.unreadCount > 99 ? "99+" : workspace.unreadCount}
               </Badge>
             ) : null}

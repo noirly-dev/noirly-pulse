@@ -73,3 +73,20 @@ describe("message cache", () => {
     expect(newestMessageId(data([msg({ id: "1", clientNonce: "a" }), msg({ id: "2", clientNonce: "b" })]))).toBe("2");
   });
 });
+
+describe("newestMessageId", () => {
+  it("skips optimistic rows so catch-up never sends a tmp- cursor", () => {
+    const data = {
+      pages: [
+        {
+          messages: [{ id: "a1" }, { id: "b2" }, { id: "tmp-xyz" }] as never,
+          nextCursor: null,
+          prevCursor: null,
+        },
+      ],
+      pageParams: [undefined],
+    };
+    expect(newestMessageId(data)).toBe("b2");
+    expect(newestMessageId(undefined)).toBeNull();
+  });
+});

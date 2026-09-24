@@ -9,7 +9,7 @@ Dark-mode messaging for the Noirly ecosystem. Architecture: [`docs/ARCHITECTURE.
 | **0** | Identity login, shell, health, realtime JWT |
 | **1** | Personal DMs, composer, reactions, typing, presence |
 | **2** | Team workspaces, channels, threads, mentions, search |
-| **3** | Push (VAPID), notification prefs, virtualized lists, search jump-to-message, admin delete, Playwright smoke |
+| **3** | Push (VAPID), notification prefs, virtualized lists, search jump-to-message, admin delete, Playwright smoke + two-user E2E |
 
 ## Quick start
 
@@ -39,8 +39,19 @@ Enable push from **Settings → Browser push** after signing in.
 ### E2E
 
 ```bash
-pnpm exec playwright install chromium
+pnpm exec playwright install chromium   # or set PLAYWRIGHT_CHROMIUM_EXECUTABLE
 pnpm test:e2e
+```
+
+`e2e/two-user.spec.ts` drives two real accounts through Identity and
+noirly-realtime (DM delivery, receipts, threads, reactions, edits, private
+channels, mentions, search scope). It is skipped unless credentials are set:
+
+```bash
+# Identity running with the noirly-pulse client registered, realtime on :4001,
+# and two verified Identity users (npm run db:seed creates dev@noirly.test).
+PULSE_E2E_USER_A=dev@noirly.test PULSE_E2E_USER_B=you@example.com \
+PULSE_E2E_PASSWORD='...' pnpm test:e2e
 ```
 
 ## Scripts

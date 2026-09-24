@@ -103,7 +103,7 @@ export function NotificationSettings() {
       <section className="space-y-3 border border border-[var(--hairline)] bg-[var(--surface)] p-5">
         <h2 className="text-sm font-semibold text-foreground">Default notifications</h2>
         <p className="text-sm text-muted-foreground">
-          Applies to new conversations. Override per channel from channel settings later.
+          Applies to new conversations. Override any channel from its Settings.
         </p>
         <div className="space-y-2">
           {PREFS.map((option) => (

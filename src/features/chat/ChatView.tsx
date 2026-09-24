@@ -4,9 +4,10 @@ import { useRealtimeClient } from "@noirly-dev/realtime-client/react";
 import { usePresence } from "@noirly-dev/realtime-client/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { Message, User } from "@/src/core/models/types";
+import type { ConversationSummary, Message, TypingState, User } from "@/src/core/models/types";
+import { renderMarkdownToSafeHtml } from "@/src/core/markdown/sanitize";
 import { PresenceAvatars } from "@/src/features/channels/PresenceAvatars";
 import { ChannelCallBanner } from "@/src/features/calls/ChannelCallBanner";
 import { StartCallButtons } from "@/src/features/calls/StartCallButtons";
@@ -21,6 +22,12 @@ import { api } from "@/src/lib/api-client";
 import { useTypingStore, useUnreadStore } from "@/src/stores/ui-store";
 import { Avatar } from "@/src/components/Avatar";
 import { EmptyState } from "@/src/components/EmptyState";
+import { useReadReceipts } from "@/src/features/chat/useReadReceipts";
+import { ChannelSettingsDialog } from "@/src/features/channels/ChannelSettingsDialog";
+import { lastSeenLabel } from "@/src/core/chat/last-seen";
+
+/** Stable fallback: a fresh `{}` per selector call makes Zustand re-render forever. */
+const NO_TYPERS: Record<string, TypingState> = {};
 
 type Props = {
   conversationId: string;
@@ -33,6 +40,11 @@ type Props = {
   mentionCandidates?: User[];
   onOpenThread?: (messageId: string) => void;
   canModerate?: boolean;
+  /**
+   * Rendered inside a thread side panel: the parent view already owns the
+   * header and the realtime subscription.
+   */
+  embedded?: boolean;
 };
 
 export function ChatView({
@@ -46,24 +58,34 @@ export function ChatView({
   mentionCandidates = [],
   onOpenThread,
   canModerate = false,
+  embedded = false,
 }: Props) {
   const searchParams = useSearchParams();
   const highlightMessageId = searchParams.get("msg");
   const queryClient = useQueryClient();
   const realtimeEnabled = Boolean(process.env.NEXT_PUBLIC_REALTIME_WS_URL);
+  const [lastOwnMessageId, setLastOwnMessageId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { noteRead, flush } = useReadReceipts(conversationId);
+  // Receipts track the root timeline; thread panels do not move the pointer.
+  const onReadable = useCallback(
+    (messageId: string) => {
+      if (!threadParentId) noteRead(messageId);
+    },
+    [noteRead, threadParentId],
+  );
   const { data, isError } = useQuery({
     queryKey: qk.conversation(conversationId),
     queryFn: () => api.getConversation(conversationId),
   });
   const conversation = data?.conversation;
   const title = conversation ? conversationTitle(conversation, currentUserId) : "Conversation";
-  const typing = useTypingStore((s) => s.byConv[conversationId] ?? {});
+  const typing = useTypingStore((s) => s.byConv[conversationId] ?? NO_TYPERS);
   const typers = Object.values(typing).filter(
     (row) =>
       row.userId !== currentUserId &&
       (row.threadParentId ?? null) === (threadParentId ?? null),
   );
-  const readTimer = useRef<number | null>(null);
   const names = typers.map(
     (row) => conversation?.members.find((m) => m.id === row.userId)?.displayName ?? "Someone",
   );
@@ -72,13 +94,23 @@ export function ChatView({
     useUnreadStore.getState().clear(conversationId);
   }, [conversationId]);
 
-  function markLatestRead(message: Message) {
-    if (message.senderId === currentUserId) return;
-    if (readTimer.current) window.clearTimeout(readTimer.current);
-    readTimer.current = window.setTimeout(() => {
-      void api.markRead(conversationId, message.id);
-    }, 800);
-  }
+  // Cmd/Ctrl+Shift+A: mark this conversation read now (§11.7).
+  useEffect(() => {
+    if (threadParentId) return;
+    function onKey(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || !event.shiftKey) return;
+      if (event.key.toLowerCase() !== "a") return;
+      event.preventDefault();
+      const data = queryClient.getQueryData<MessagesInfinite>(qk.messages(conversationId, "root"));
+      const newest = data?.pages[0]?.messages.filter((m) => !m.id.startsWith("tmp-")).at(-1);
+      if (newest) {
+        noteRead(newest.id);
+        flush();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [conversationId, threadParentId, queryClient, noteRead, flush]);
 
   if (isError) {
     return (
@@ -98,7 +130,7 @@ export function ChatView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {realtimeEnabled ? (
+      {realtimeEnabled && !embedded ? (
         <ConversationRealtime
           conversationId={conversationId}
           currentUserId={currentUserId}
@@ -106,7 +138,7 @@ export function ChatView({
           avatarUrl={avatarUrl}
         />
       ) : null}
-      <header className="flex items-center gap-3 border-b border border-[var(--hairline)] px-4 py-3 sm:px-6">
+      <header hidden={embedded} className="flex items-center gap-3 border-b border border-[var(--hairline)] px-4 py-3 sm:px-6">
         <Link href={backHref} className="text-sm text-muted-foreground md:hidden">
           Back
         </Link>
@@ -122,7 +154,14 @@ export function ChatView({
           {conversation.topic ? (
             <p className="truncate text-xs text-muted-foreground">{conversation.topic}</p>
           ) : realtimeEnabled ? (
-            <PresenceLine conversationId={conversationId} />
+            <PresenceLine
+              conversationId={conversationId}
+              lastSeenAt={
+                conversation.kind === "dm"
+                  ? (conversation.members.find((m) => m.id !== currentUserId)?.lastSeenAt ?? null)
+                  : null
+              }
+            />
           ) : (
             <p className="text-xs text-muted-foreground">
               {isChannel ? "Channel" : "Direct message"}
@@ -131,6 +170,15 @@ export function ChatView({
         </div>
         {realtimeEnabled && isChannel ? (
           <PresenceAvatars conversationId={conversationId} />
+        ) : null}
+        {isChannel && workspaceId && !threadParentId ? (
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-[var(--surface-2)] hover:text-foreground"
+          >
+            Settings
+          </button>
         ) : null}
         {(conversation.kind === "dm" ||
           conversation.kind === "group_dm" ||
@@ -164,16 +212,24 @@ export function ChatView({
           conversationKind={conversation.kind}
         />
       ) : null}
-      <div
-        className="flex min-h-0 flex-1 flex-col"
-        onMouseMove={() => {
-          const pages = queryClient.getQueryData<MessagesInfinite>(
-            qk.messages(conversationId, "root"),
-          );
-          const last = pages?.pages[0]?.messages.at(-1);
-          if (last) void markLatestRead(last);
-        }}
-      >
+      {isChannel && workspaceId && settingsOpen ? (
+        <ChannelSettingsDialog
+          open
+          onClose={() => setSettingsOpen(false)}
+          channel={conversation}
+          workspaceId={workspaceId}
+          currentUserId={currentUserId}
+          canManage={canModerate}
+        />
+      ) : null}
+      {threadParentId ? (
+        <ThreadParent
+          conversationId={conversationId}
+          threadParentId={threadParentId}
+          members={conversation.members}
+        />
+      ) : null}
+      <div className="flex min-h-0 flex-1 flex-col">
         <MessageList
           conversation={conversation}
           currentUserId={currentUserId}
@@ -181,6 +237,8 @@ export function ChatView({
           highlightMessageId={highlightMessageId}
           canModerate={canModerate}
           onOpenThread={onOpenThread}
+          onReadable={onReadable}
+          onLastOwnChange={setLastOwnMessageId}
         />
         {names.length > 0 ? (
           <p className="px-4 pb-2 text-xs text-muted-foreground" aria-live="polite">
@@ -200,7 +258,12 @@ export function ChatView({
         displayName={displayName}
         realtimeEnabled={realtimeEnabled}
         threadParentId={threadParentId}
-        mentionCandidates={mentionCandidates}
+        lastOwnMessageId={lastOwnMessageId}
+        mentionCandidates={
+          mentionCandidates.length > 0
+            ? mentionCandidates
+            : conversation.members.filter((m) => m.id !== currentUserId)
+        }
         onSend={async (content, files) => {
           const attachments = [];
           for (const file of files) {
@@ -261,14 +324,79 @@ export function ChatView({
   );
 }
 
-function PresenceLine({ conversationId }: { conversationId: string }) {
+/** The message a thread hangs off, pinned above the replies. */
+function ThreadParent({
+  conversationId,
+  threadParentId,
+  members,
+}: {
+  conversationId: string;
+  threadParentId: string;
+  members: ConversationSummary["members"];
+}) {
+  // Shaped like the message lists and keyed under ["messages", conv] so the
+  // realtime patchers (edit, delete, thread.updated) keep it current.
+  const { data } = useQuery({
+    queryKey: ["messages", conversationId, `parent:${threadParentId}`],
+    queryFn: async (): Promise<MessagesInfinite> => {
+      const page = await api.listMessages(conversationId, {
+        anchorMessageId: threadParentId,
+        limit: 1,
+      });
+      return { pages: [page], pageParams: [undefined] };
+    },
+    staleTime: Infinity,
+  });
+  const parent = data?.pages[0]?.messages.find((m) => m.id === threadParentId);
+  if (!parent) return null;
+  const sender = members.find((m) => m.id === parent.senderId);
+  return (
+    <div className="border-b border-[var(--hairline)] px-4 py-3">
+      <p className="text-xs text-muted-foreground">{sender?.displayName ?? "Someone"}</p>
+      {parent.deletedAt ? (
+        <p className="text-sm italic text-muted-foreground">This message was deleted</p>
+      ) : (
+        <div
+          className="mt-1 break-words text-sm [&_a]:underline"
+          dangerouslySetInnerHTML={{ __html: renderMarkdownToSafeHtml(parent.content) }}
+        />
+      )}
+      <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+        {parent.replyCount} {parent.replyCount === 1 ? "reply" : "replies"}
+      </p>
+    </div>
+  );
+}
+
+function PresenceLine({
+  conversationId,
+  lastSeenAt,
+}: {
+  conversationId: string;
+  /** Set for 1:1 DMs: the other person's persisted heartbeat. */
+  lastSeenAt: string | null;
+}) {
   const { members } = usePresence(pulseChannel.conv(conversationId), {
     collapseByUserId: true,
   });
   const count = members.length;
+  // We are one of the present members, so someone else is here when count > 1.
+  const othersHere = count > 1;
+  const label = othersHere
+    ? count === 2
+      ? "Online"
+      : `${count} active`
+    : lastSeenAt
+      ? lastSeenLabel(lastSeenAt)
+      : "Offline";
   return (
-    <p className="text-xs text-muted-foreground">
-      {count > 1 ? `${count} active` : count === 1 ? "Active now" : "Offline"}
+    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span
+        aria-hidden
+        className="inline-block size-2 rounded-full"
+        style={{ background: othersHere ? "#3ddc97" : "#6b6b6b" }}
+      />
+      {label}
     </p>
   );
 }
@@ -283,6 +411,7 @@ function ComposerWithRealtime({
   displayName,
   realtimeEnabled,
   threadParentId,
+  lastOwnMessageId,
   mentionCandidates,
   onSend,
 }: {
@@ -291,6 +420,7 @@ function ComposerWithRealtime({
   displayName: string;
   realtimeEnabled: boolean;
   threadParentId: string | null;
+  lastOwnMessageId: string | null;
   mentionCandidates: User[];
   onSend: (content: string, files: File[]) => Promise<void>;
 }) {
@@ -298,6 +428,8 @@ function ComposerWithRealtime({
     return (
       <MessageComposer
         conversationId={conversationId}
+        threadParentId={threadParentId}
+        lastOwnMessageId={lastOwnMessageId}
         mentionCandidates={mentionCandidates}
         onSend={onSend}
       />
@@ -309,6 +441,7 @@ function ComposerWithRealtime({
       currentUserId={currentUserId}
       displayName={displayName}
       threadParentId={threadParentId}
+      lastOwnMessageId={lastOwnMessageId}
       mentionCandidates={mentionCandidates}
       onSend={onSend}
     />
@@ -320,6 +453,7 @@ function ComposerTyping({
   currentUserId,
   displayName,
   threadParentId,
+  lastOwnMessageId,
   mentionCandidates,
   onSend,
 }: {
@@ -327,31 +461,34 @@ function ComposerTyping({
   currentUserId: string;
   displayName: string;
   threadParentId: string | null;
+  lastOwnMessageId: string | null;
   mentionCandidates: User[];
   onSend: (content: string, files: File[]) => Promise<void>;
 }) {
   const client = useRealtimeClient();
   const ty = pulseChannel.typing(conversationId);
+  // Typing is best-effort: while offline, publish rejects "not connected".
   return (
     <MessageComposer
       conversationId={conversationId}
+      threadParentId={threadParentId}
+      lastOwnMessageId={lastOwnMessageId}
       mentionCandidates={mentionCandidates}
       onSend={onSend}
       onTypingStart={() => {
-        void client.publish(
-          ty,
-          "typing.start",
-          { userId: currentUserId, displayName, threadParentId },
-          { ephemeral: true },
-        );
+        client
+          .publish(
+            ty,
+            "typing.start",
+            { userId: currentUserId, displayName, threadParentId },
+            { ephemeral: true },
+          )
+          .catch(() => undefined);
       }}
       onTypingStop={() => {
-        void client.publish(
-          ty,
-          "typing.stop",
-          { userId: currentUserId, threadParentId },
-          { ephemeral: true },
-        );
+        client
+          .publish(ty, "typing.stop", { userId: currentUserId, threadParentId }, { ephemeral: true })
+          .catch(() => undefined);
       }}
     />
   );

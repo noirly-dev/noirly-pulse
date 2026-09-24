@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  useChannel,
   usePresence,
   useRealtimeClient,
   useRealtimeEvent,
   useRealtimeStatus,
 } from "@noirly-dev/realtime-client/react";
+import { useChannel } from "@/src/features/realtime/useChannel";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { CallPublic, Message, Reaction, ReadReceipt } from "@/src/core/models/types";
 import { pulseChannel } from "@/src/core/realtime/channels";
 import {
@@ -45,10 +45,17 @@ export function ConversationRealtime({
   const queryClient = useQueryClient();
   const conv = pulseChannel.conv(conversationId);
   const ty = pulseChannel.typing(conversationId);
-  const stored =
-    typeof window === "undefined" ? null : window.sessionStorage.getItem(eidKey(conv));
+  // Read once per conversation: a changing lastEventId option would resubscribe.
+  const stored = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return window.sessionStorage.getItem(eidKey(conv));
+    } catch {
+      return null;
+    }
+  }, [conv]);
 
-  const { lastEventId } = useChannel(conv, {
+  const { lastEventId, status: convStatus } = useChannel(conv, {
     presence: true,
     lastEventId: stored ?? undefined,
     replayLimit: 100,
@@ -57,23 +64,49 @@ export function ConversationRealtime({
 
   const { join, leave } = usePresence(conv, { collapseByUserId: true });
 
+  // Presence is rebuilt from join snapshots after every (re)subscribe, so join
+  // each time the conv channel is subscribed (§5.7). Joining before the
+  // subscription is acknowledged is rejected by the server ("not subscribed").
   useEffect(() => {
-    void join({ displayName, avatarUrl });
-    return () => {
-      void leave();
+    if (convStatus !== "subscribed") return;
+    let cancelled = false;
+    // After a reconnect the client restores subscriptions asynchronously, so a
+    // join can briefly race "not subscribed"; retry a few times.
+    const attempt = (n: number) => {
+      join({ displayName, avatarUrl }).catch(() => {
+        if (!cancelled && n < 3) window.setTimeout(() => attempt(n + 1), 400 * (n + 1));
+      });
     };
-  }, [join, leave, displayName, avatarUrl]);
+    attempt(0);
+    return () => {
+      cancelled = true;
+      leave().catch(() => undefined);
+    };
+  }, [convStatus, join, leave, displayName, avatarUrl]);
 
   useEffect(() => {
-    if (lastEventId) window.sessionStorage.setItem(eidKey(conv), lastEventId);
+    if (!lastEventId) return;
+    try {
+      window.sessionStorage.setItem(eidKey(conv), lastEventId);
+    } catch {
+      /* storage unavailable */
+    }
   }, [conv, lastEventId]);
 
+  /** Patch every loaded list for this conversation (root + open threads). */
   function patchMessages(updater: (data: MessagesInfinite | undefined) => MessagesInfinite) {
-    queryClient.setQueryData<MessagesInfinite>(qk.messages(conversationId, "root"), updater);
+    queryClient.setQueriesData<MessagesInfinite>(
+      { queryKey: ["messages", conversationId] },
+      (old) => (old ? updater(old) : old),
+    );
   }
 
   useRealtimeEvent<{ message: Message }>(conv, "message.sent", (data) => {
-    patchMessages((old) => appendMessage(old, data.message));
+    // Thread replies belong to the thread list only, never the channel root.
+    queryClient.setQueryData<MessagesInfinite>(
+      qk.messages(conversationId, data.message.threadParentId ?? "root"),
+      (old) => appendMessage(old, data.message),
+    );
     void queryClient.invalidateQueries({ queryKey: qk.conversations("personal") });
     if (data.message.senderId !== currentUserId) {
       useTypingStore.getState().onStop(conversationId, data.message.senderId, null);
@@ -251,7 +284,8 @@ export function ConversationRealtime({
       await queryClient.invalidateQueries({ queryKey: qk.messages(conversationId, "root") });
       return;
     }
-    const page = await api.listMessages(conversationId, { after, limit: 100 });
+    const page = await api.listMessages(conversationId, { after, limit: 100 }).catch(() => null);
+    if (!page) return;
     queryClient.setQueryData<MessagesInfinite>(qk.messages(conversationId, "root"), (old) => {
       let next = old;
       for (const message of page.messages) {
@@ -269,10 +303,27 @@ export function ConversationRealtime({
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [conversationId]);
 
+  // History is fetched over REST before the subscription is acknowledged; merge
+  // anything sent in that window (and after any resubscribe) so it is not lost
+  // until the next refresh (§5.7).
   useEffect(() => {
-    if (status === "ready") {
-      useUnreadStore.getState().clear(conversationId);
+    if (convStatus === "subscribed") void catchUp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [convStatus, conversationId]);
+
+  // After a dropped connection comes back, merge anything missed (§11.9).
+  const prevStatus = useRef(status);
+  useEffect(() => {
+    const was = prevStatus.current;
+    prevStatus.current = status;
+    if (status !== "ready") return;
+    useUnreadStore.getState().clear(conversationId);
+    if (was === "reconnecting" || was === "closed") {
+      void catchUp();
+      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
     }
+    // Runs on status transitions only; catchUp reads the latest cache itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, conversationId]);
 
   return null;

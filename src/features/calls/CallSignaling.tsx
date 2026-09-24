@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  useChannel,
   usePresence,
   useRealtimeClient,
   useRealtimeEvent,
 } from "@noirly-dev/realtime-client/react";
+import { useChannel } from "@/src/features/realtime/useChannel";
 import { useEffect, useRef } from "react";
 import { pulseChannel } from "@/src/core/realtime/channels";
 import type {

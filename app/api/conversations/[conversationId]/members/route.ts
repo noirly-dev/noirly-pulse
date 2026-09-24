@@ -9,6 +9,18 @@ import {
 
 type Params = { params: Promise<{ conversationId: string }> };
 
+export async function GET(_request: Request, { params }: Params) {
+  try {
+    const { conversationId } = await params;
+    await assertObjectId(conversationId, "conversationId");
+    const { sync } = await getSyncProvider();
+    const conversation = await sync.getConversation(conversationId);
+    return jsonOk({ members: conversation.members });
+  } catch (error) {
+    return jsonError(error);
+  }
+}
+
 export async function POST(request: Request, { params }: Params) {
   try {
     const { conversationId } = await params;

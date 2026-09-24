@@ -1,8 +1,13 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { motion, useReducedMotion } from "framer-motion";
+import { useRef, useState, type KeyboardEvent } from "react";
 import type { ConversationPeer, Message } from "@/src/core/models/types";
+import { patchMessage, tombstoneMessage, type MessagesInfinite } from "@/src/core/sync/message-cache";
+import { EmojiPicker } from "@/src/features/chat/EmojiPicker";
+import { ImageLightbox } from "@/src/features/chat/ImageLightbox";
+import { useUIStore } from "@/src/stores/ui-store";
 import { renderMarkdownToSafeHtml } from "@/src/core/markdown/sanitize";
 import { cn } from "@/src/lib/cn";
 import { CallLogBubble } from "@/src/features/calls/CallLogBubble";
@@ -10,14 +15,17 @@ import { api } from "@/src/lib/api-client";
 import { Button } from "@noirly-dev/ui";
 import { Avatar } from "@/src/components/Avatar";
 
-const QUICK_EMOJI = ["👍", "❤️", "😂", "🎉", "👀", "🔥"];
-
 type Props = {
   message: Message;
+  currentUserId: string;
   mine: boolean;
   sender?: ConversationPeer;
   showAvatar: boolean;
   receipt?: "sending" | "failed" | "delivered" | "seen" | null;
+  /** Group DMs: members who have read up to this message. */
+  seenBy?: number;
+  /** Animate arrival only when the list is pinned to the bottom (§8.4). */
+  animateIn?: boolean;
   onRetry?: () => void;
   onDiscard?: () => void;
   onOpenThread?: (messageId: string) => void;
@@ -26,10 +34,13 @@ type Props = {
 
 export function MessageBubble({
   message,
+  currentUserId,
   mine,
   sender,
   showAvatar,
   receipt,
+  seenBy = 0,
+  animateIn = true,
   onRetry,
   onDiscard,
   onOpenThread,
@@ -38,6 +49,82 @@ export function MessageBubble({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
   const [picker, setPicker] = useState(false);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+  const reduceMotion = useReducedMotion();
+  const queryClient = useQueryClient();
+  const reactButton = useRef<HTMLButtonElement>(null);
+  const editRequest = useUIStore((s) => s.editMessageId);
+
+  // "E" in an empty composer asks the latest own message to enter edit mode.
+  // Adjusting state during render (not in an effect) avoids a cascading render.
+  const requested = editRequest === message.id;
+  const [handledRequest, setHandledRequest] = useState(false);
+  if (requested && !handledRequest) {
+    setHandledRequest(true);
+    setDraft(message.content);
+    setEditing(true);
+  } else if (!requested && handledRequest) {
+    setHandledRequest(false);
+  }
+
+  function stopEditing() {
+    setEditing(false);
+    if (useUIStore.getState().editMessageId === message.id) {
+      useUIStore.getState().setEditMessageId(null);
+    }
+  }
+
+  function patchCache(update: (old: MessagesInfinite) => MessagesInfinite) {
+    queryClient.setQueriesData<MessagesInfinite>(
+      { queryKey: ["messages", message.conversationId] },
+      (old) => (old ? update(old) : old),
+    );
+  }
+
+  async function react(emoji: string) {
+    const result = await api.toggleReaction(message.id, emoji).catch(() => null);
+    if (!result) return;
+    patchCache((old) => {
+      const existing = findMessage(old, message.id);
+      if (!existing) return old;
+      const others = existing.reactions.filter((r) => r.emoji !== emoji);
+      const row = existing.reactions.find((r) => r.emoji === emoji);
+      const userId = currentUserId;
+      const ids = new Set(row?.userIds ?? []);
+      if (result.added) ids.add(userId);
+      else ids.delete(userId);
+      const reactions = ids.size
+        ? existing.reactions.map((r) => (r.emoji === emoji ? { ...r, userIds: [...ids] } : r))
+        : others;
+      if (!row && ids.size) reactions.push({ emoji, userIds: [...ids] });
+      return patchMessage(old, message.id, { reactions });
+    });
+  }
+
+  async function remove() {
+    const label = canModerate && !mine ? "Delete this message as admin?" : "Delete this message?";
+    if (!confirm(label)) return;
+    const result = await api.deleteMessage(message.id).catch(() => null);
+    if (result?.message.deletedAt) {
+      patchCache((old) => tombstoneMessage(old, message.id, result.message.deletedAt!));
+    }
+  }
+
+  function onMessageKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget || editing || deleted) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if ((event.key === "r" || event.key === "R") && onOpenThread && !message.threadParentId) {
+      event.preventDefault();
+      onOpenThread(message.id);
+    } else if (event.key === "+") {
+      event.preventDefault();
+      setPicker(true);
+    } else if ((event.key === "e" || event.key === "E") && mine) {
+      event.preventDefault();
+      setDraft(message.content);
+      setEditing(true);
+    }
+  }
 
   const deleted = Boolean(message.deletedAt);
   const failed = message.localStatus === "failed";
@@ -51,20 +138,35 @@ export function MessageBubble({
   async function saveEdit() {
     const next = draft.trim();
     if (!next || next === message.content) {
-      setEditing(false);
+      stopEditing();
       return;
     }
-    await api.editMessage(message.id, next);
-    setEditing(false);
+    const result = await api.editMessage(message.id, next).catch(() => null);
+    if (result) {
+      patchCache((old) =>
+        patchMessage(old, message.id, {
+          content: result.message.content,
+          editedAt: result.message.editedAt,
+        }),
+      );
+    }
+    stopEditing();
   }
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
+      initial={animateIn ? { opacity: 0, y: reduceMotion ? 0 : 8 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15 }}
-      className={cn("group flex gap-2 px-4", mine ? "flex-row-reverse" : "flex-row")}
+      tabIndex={0}
+      aria-label={`${mine ? "You" : (sender?.displayName ?? "Someone")}: ${
+        deleted ? "deleted message" : message.content.slice(0, 120)
+      }`}
+      onKeyDown={onMessageKeyDown}
+      className={cn(
+        "group flex gap-2 px-4 outline-none focus-visible:bg-[var(--surface-2)]",
+        mine ? "flex-row-reverse" : "flex-row",
+      )}
     >
       <div className="mt-1 w-7 shrink-0">
         {!mine && showAvatar && sender ? (
@@ -91,7 +193,18 @@ export function MessageBubble({
             <div className="space-y-2">
               <textarea
                 value={draft}
+                autoFocus
+                aria-label="Edit message"
                 onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    void saveEdit();
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    stopEditing();
+                  }
+                }}
                 className="w-full rounded-md bg-ink/10 p-2 text-sm text-inherit outline-none"
                 rows={3}
               />
@@ -102,7 +215,7 @@ export function MessageBubble({
                 <Button
                   variant="ghost"
                   className="h-7 px-2 text-xs"
-                  onClick={() => setEditing(false)}
+                  onClick={stopEditing}
                 >
                   Cancel
                 </Button>
@@ -122,13 +235,16 @@ export function MessageBubble({
                 <div className="mt-2 space-y-2">
                   {message.attachments.map((file) =>
                     file.kind === "image" ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <button
                         key={file.id}
-                        src={file.url}
-                        alt={file.filename}
-                        className="max-h-64 rounded-lg"
-                      />
+                        type="button"
+                        className="block cursor-zoom-in"
+                        aria-label={`Open image ${file.filename}`}
+                        onClick={() => setLightbox({ src: file.url, alt: file.filename })}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={file.url} alt={file.filename} className="max-h-64 rounded-lg" />
+                      </button>
                     ) : (
                       <a
                         key={file.id}
@@ -152,7 +268,8 @@ export function MessageBubble({
               <button
                 key={reaction.emoji}
                 type="button"
-                onClick={() => void api.toggleReaction(message.id, reaction.emoji)}
+                onClick={() => void react(reaction.emoji)}
+                aria-label={`${reaction.emoji} ${reaction.userIds.length}, toggle reaction`}
                 className="rounded-full bg-[var(--surface)] px-2 py-0.5 text-xs"
               >
                 {reaction.emoji} {reaction.userIds.length}
@@ -176,6 +293,7 @@ export function MessageBubble({
           {receipt === "sending" ? <span>Sending…</span> : null}
           {receipt === "delivered" ? <span>Delivered</span> : null}
           {receipt === "seen" ? <span>Seen</span> : null}
+          {seenBy > 0 ? <span>Seen by {seenBy}</span> : null}
           {failed ? (
             <>
               <button type="button" className="text-foreground" onClick={onRetry}>
@@ -192,19 +310,27 @@ export function MessageBubble({
               className="text-muted-foreground hover:text-foreground"
               onClick={() => onOpenThread(message.id)}
             >
-              {message.replyCount > 0 ? `${message.replyCount} replies` : "Reply in thread"}
+              {message.replyCount === 1
+                ? "1 reply"
+                : message.replyCount > 1
+                  ? `${message.replyCount} replies`
+                  : "Reply in thread"}
             </button>
           ) : null}
         </div>
         {!deleted && !failed && message.localStatus !== "sending" ? (
           <div
             className={cn(
-              "relative mt-1 hidden gap-1 group-hover:flex group-focus-within:flex",
+              "relative mt-1 gap-1 group-hover:flex group-focus-within:flex",
+              picker ? "flex" : "hidden",
               mine ? "justify-end" : "justify-start",
             )}
           >
             <button
+              ref={reactButton}
               type="button"
+              aria-haspopup="dialog"
+              aria-expanded={picker}
               className="rounded px-1 text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setPicker((v) => !v)}
             >
@@ -227,35 +353,39 @@ export function MessageBubble({
                 <button
                   type="button"
                   className="rounded px-1 text-xs text-foreground"
-                  onClick={() => {
-                    const label = canModerate && !mine ? "Delete this message as admin?" : "Delete this message?";
-                    if (confirm(label)) void api.deleteMessage(message.id);
-                  }}
+                  onClick={() => void remove()}
                 >
                   Delete
                 </button>
               </>
             ) : null}
             {picker ? (
-              <div className="absolute bottom-6 z-10 flex gap-1 rounded-lg border border-[var(--hairline)] bg-[var(--surface)] p-1">
-                {QUICK_EMOJI.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    className="size-8 rounded hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
-                    onClick={() => {
-                      setPicker(false);
-                      void api.toggleReaction(message.id, emoji);
-                    }}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
+              <EmojiPicker
+                onPick={(emoji) => {
+                  setPicker(false);
+                  void react(emoji);
+                  reactButton.current?.focus();
+                }}
+                onClose={() => {
+                  setPicker(false);
+                  reactButton.current?.focus();
+                }}
+              />
             ) : null}
           </div>
         ) : null}
       </div>
+      {lightbox ? (
+        <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+      ) : null}
     </motion.div>
   );
+}
+
+function findMessage(data: MessagesInfinite, id: string): Message | undefined {
+  for (const page of data.pages) {
+    const hit = page.messages.find((m) => m.id === id);
+    if (hit) return hit;
+  }
+  return undefined;
 }

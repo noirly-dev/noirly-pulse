@@ -1,12 +1,17 @@
 "use client";
 
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import type { User } from "@/src/core/models/types";
-import { useComposerStore } from "@/src/stores/ui-store";
+import { readEnterToSend, subscribePreferences } from "@/src/lib/preferences";
+import { useComposerStore, useUIStore } from "@/src/stores/ui-store";
 import { Button } from "@noirly-dev/ui";
 
 type Props = {
   conversationId: string;
+  /** Drafts are keyed per conversation, or `convId:threadId` inside a thread. */
+  threadParentId?: string | null;
+  /** Latest own message, for the `E` (edit last) shortcut. */
+  lastOwnMessageId?: string | null;
   disabled?: boolean;
   mentionCandidates?: User[];
   onTypingStart?: () => void;
@@ -16,14 +21,23 @@ type Props = {
 
 export function MessageComposer({
   conversationId,
+  threadParentId = null,
+  lastOwnMessageId = null,
   disabled,
   mentionCandidates = [],
   onTypingStart,
   onTypingStop,
   onSend,
 }: Props) {
-  const draft = useComposerStore((s) => s.drafts[conversationId] ?? "");
-  const setDraft = useComposerStore((s) => s.setDraft);
+  const draftKey = threadParentId ? `${conversationId}:${threadParentId}` : conversationId;
+  const draft = useComposerStore((s) => s.drafts[draftKey] ?? "");
+  const setDraftFor = useComposerStore((s) => s.setDraft);
+  const setDraft = (_key: string, value: string) => setDraftFor(draftKey, value);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const composing = useRef(false);
+  const textarea = useRef<HTMLTextAreaElement>(null);
+  // Server snapshot is the default so SSR and hydration agree.
+  const enterSends = useSyncExternalStore(subscribePreferences, readEnterToSend, () => true);
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -68,7 +82,15 @@ export function MessageComposer({
   function detectMention(value: string) {
     const match = /(?:^|\s)@([\w.-]*)$/.exec(value);
     setMentionQuery(match ? match[1] : null);
+    setMentionIndex(0);
   }
+
+  // Hard stop (§11.2): leaving the conversation/thread ends our typing state.
+  const stopRef = useRef(stopTyping);
+  useEffect(() => {
+    stopRef.current = stopTyping;
+  });
+  useEffect(() => () => stopRef.current(), [draftKey]);
 
   function insertMention(user: User) {
     const token = `[@${user.displayName}](pulse://user/${user.id}) `;
@@ -83,6 +105,8 @@ export function MessageComposer({
   function onChange(value: string) {
     setDraft(conversationId, value);
     detectMention(value);
+    // IME: no typing pings until compositionend (§11.2).
+    if (composing.current) return;
     if (!value.trim()) {
       stopTyping();
       return;
@@ -108,21 +132,63 @@ export function MessageComposer({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey && mentionOptions.length === 0) {
+    if (event.nativeEvent.isComposing || composing.current) return;
+
+    if (mentionOptions.length > 0) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        setMentionIndex((i) => (i + step + mentionOptions.length) % mentionOptions.length);
+        return;
+      }
+      if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        insertMention(mentionOptions[mentionIndex] ?? mentionOptions[0]);
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setMentionQuery(null);
+        return;
+      }
+    }
+
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       void submit();
+      return;
+    }
+    if (event.key === "Enter" && !event.shiftKey && enterSends) {
+      event.preventDefault();
+      void submit();
+      return;
+    }
+    if ((event.key === "e" || event.key === "E" || event.key === "ArrowUp") && !draft && lastOwnMessageId) {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      event.preventDefault();
+      useUIStore.getState().setEditMessageId(lastOwnMessageId);
     }
   }
 
   return (
     <div className="relative border-t border border-[var(--hairline)] bg-background p-3">
       {mentionOptions.length > 0 ? (
-        <ul className="absolute bottom-full left-3 right-3 mb-1 max-h-40 overflow-y-auto border border border-[var(--hairline)] bg-[var(--surface)] py-1">
-          {mentionOptions.map((user) => (
-            <li key={user.id}>
+        <ul
+          id={`mentions-${draftKey}`}
+          role="listbox"
+          aria-label="Mention someone"
+          className="absolute bottom-full left-3 right-3 mb-1 max-h-40 overflow-y-auto border border border-[var(--hairline)] bg-[var(--surface)] py-1"
+        >
+          {mentionOptions.map((user, index) => (
+            <li key={user.id} role="option" aria-selected={index === mentionIndex}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
+                tabIndex={-1}
+                className={
+                  "flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]" +
+                  (index === mentionIndex ? " bg-[var(--surface-2)]" : "")
+                }
                 onMouseDown={(event) => {
                   event.preventDefault();
                   insertMention(user);
@@ -164,7 +230,19 @@ export function MessageComposer({
           }}
         />
         <textarea
+          ref={textarea}
+          data-composer=""
           value={draft}
+          aria-multiline="true"
+          aria-autocomplete="list"
+          aria-controls={mentionOptions.length > 0 ? `mentions-${draftKey}` : undefined}
+          onCompositionStart={() => {
+            composing.current = true;
+          }}
+          onCompositionEnd={(e) => {
+            composing.current = false;
+            onChange(e.currentTarget.value);
+          }}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
@@ -183,7 +261,7 @@ export function MessageComposer({
         </Button>
       </div>
       <p className="mt-1 px-1 font-mono text-[10px] text-muted-foreground">
-        Enter to send · Shift+Enter for a new line · @ to mention
+        {enterSends ? "Enter" : "Ctrl/⌘+Enter"} to send · Shift+Enter for a new line · @ to mention
       </p>
     </div>
   );

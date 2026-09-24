@@ -77,7 +77,7 @@ export interface PulseSyncProvider {
   }): Promise<Conversation>;
   updateChannel(
     id: string,
-    input: { name?: string; topic?: string; visibility?: ChannelVisibility },
+    input: { name?: string; topic?: string | null; visibility?: ChannelVisibility },
   ): Promise<Conversation>;
   archiveChannel(id: string): Promise<void>;
   addChannelMembers(conversationId: string, userIds: string[]): Promise<void>;

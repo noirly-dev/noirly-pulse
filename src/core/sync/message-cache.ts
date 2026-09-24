@@ -138,8 +138,13 @@ export function removeByNonce(
   };
 }
 
+/** Newest persisted id in the latest page; optimistic `tmp-` rows are skipped. */
 export function newestMessageId(data: MessagesInfinite | undefined): string | null {
   const first = data?.pages[0]?.messages;
   if (!first?.length) return null;
-  return first[first.length - 1]?.id ?? null;
+  for (let i = first.length - 1; i >= 0; i -= 1) {
+    const id = first[i]?.id;
+    if (id && !id.startsWith("tmp-")) return id;
+  }
+  return null;
 }

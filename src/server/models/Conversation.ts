@@ -46,11 +46,29 @@ const conversationSchema = new Schema(
   { timestamps: true },
 );
 
-conversationSchema.index({ dmKey: 1 }, { unique: true, sparse: true });
-conversationSchema.index(
-  { workspaceId: 1, slug: 1 },
-  { unique: true, sparse: true },
-);
+// Partial, not sparse: every channel/group DM stores explicit `dmKey: null` and
+// `slug: null`, and a sparse index still indexes explicit nulls, so a sparse
+// unique index allowed only one such conversation in the whole database.
+export const CONVERSATION_UNIQUE_INDEXES = [
+  {
+    name: "dmKey_1",
+    key: { dmKey: 1 },
+    partialFilterExpression: { dmKey: { $type: "string" } },
+  },
+  {
+    name: "workspaceId_1_slug_1",
+    key: { workspaceId: 1, slug: 1 },
+    partialFilterExpression: { slug: { $type: "string" } },
+  },
+] as const;
+
+for (const index of CONVERSATION_UNIQUE_INDEXES) {
+  conversationSchema.index(index.key, {
+    name: index.name,
+    unique: true,
+    partialFilterExpression: index.partialFilterExpression,
+  });
+}
 conversationSchema.index({ workspaceId: 1, lastMessageAt: -1 });
 conversationSchema.index({ kind: 1, lastMessageAt: -1 });
 

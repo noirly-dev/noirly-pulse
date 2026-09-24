@@ -83,7 +83,7 @@ export const api = {
   },
   inviteMember(workspaceId: string, email: string, role: "admin" | "member") {
     return request<{ invite: { id: string; email: string; role: string } }>(
-      `/api/workspaces/${workspaceId}/members`,
+      `/api/workspaces/${workspaceId}/invites`,
       { method: "POST", body: JSON.stringify({ email, role }) },
     );
   },
@@ -111,6 +111,26 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     });
+  },
+  updateChannel(
+    conversationId: string,
+    body: { name?: string; topic?: string | null; visibility?: "public" | "private" },
+  ) {
+    return request<{ channel: Channel }>(`/api/conversations/${conversationId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  },
+  archiveChannel(conversationId: string) {
+    return request<{ ok: boolean }>(`/api/conversations/${conversationId}`, {
+      method: "DELETE",
+    });
+  },
+  removeChannelMember(conversationId: string, userId: string) {
+    return request<{ ok: boolean }>(
+      `/api/conversations/${conversationId}/members/${userId}`,
+      { method: "DELETE" },
+    );
   },
   addChannelMembers(conversationId: string, userIds: string[]) {
     return request<{ ok: boolean }>(`/api/conversations/${conversationId}/members`, {
