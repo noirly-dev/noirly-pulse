@@ -26,10 +26,14 @@ async function signIn(browser: Browser, email: string): Promise<Page> {
   const popupPromise = page.waitForEvent("popup");
   await page.getByRole("button", { name: /Noirly Login/i }).click();
   const popup = await popupPromise;
-  await popup.waitForURL(/\/login/);
+  // Identity's own login page (not Pulse's /login/popup), once hydrated: the
+  // submit button stays disabled until then.
+  await popup.waitForURL((url) => url.pathname === "/login" && url.origin !== new URL(page.url()).origin);
+  const submit = popup.getByRole("button", { name: /^sign in$/i });
+  await expect(submit).toBeEnabled();
   await popup.getByLabel(/email/i).first().fill(email);
   await popup.getByLabel(/password/i).first().fill(PASSWORD!);
-  await popup.getByRole("button", { name: /sign in|log in|continue/i }).first().click();
+  await submit.click();
   // Poll the URL rather than wait for a navigation event: the popup finishes
   // with window.location.assign, which can complete before a waiter attaches.
   await expect(page).not.toHaveURL(/\/login/, { timeout: 60_000 });

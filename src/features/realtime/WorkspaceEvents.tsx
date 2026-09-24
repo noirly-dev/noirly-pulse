@@ -5,10 +5,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { Channel } from "@/src/core/models/types";
 import { pulseChannel } from "@/src/core/realtime/channels";
 import { qk } from "@/src/core/sync/query-keys";
+import { useChannel } from "@/src/features/realtime/useChannel";
 
 export function WorkspaceEvents({ workspaceId }: { workspaceId: string }) {
   const queryClient = useQueryClient();
   const ws = pulseChannel.workspace(workspaceId);
+  // The shell must hold ws:{activeWorkspaceId} (§5.5); without a subscription
+  // none of the handlers below ever fire.
+  useChannel(ws, { presence: true, replayLimit: 20 });
 
   useRealtimeEvent(ws, "channel.created", () => {
     void queryClient.invalidateQueries({ queryKey: qk.channels(workspaceId) });
