@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { isLastScopePath, LAST_SCOPE_COOKIE } from "@/src/lib/last-scope";
 
 export const proxy = auth((request) => {
   const { pathname } = request.nextUrl;
@@ -27,16 +28,20 @@ export const proxy = auth((request) => {
     return NextResponse.redirect(login);
   }
 
+  // Signed-in landings reopen the last conversation (§7.5), else the inbox.
+  const lastScope = request.cookies.get(LAST_SCOPE_COOKIE)?.value;
+  const home = isLastScopePath(lastScope) ? lastScope : "/inbox";
+
   if (request.auth && isLogin) {
     const next = request.nextUrl.searchParams.get("next");
-    if (next && next.startsWith("/") && !next.startsWith("//")) {
+    if (next && next.startsWith("/") && !next.startsWith("//") && next !== "/inbox") {
       return NextResponse.redirect(new URL(next, request.nextUrl.origin));
     }
-    return NextResponse.redirect(new URL("/inbox", request.nextUrl.origin));
+    return NextResponse.redirect(new URL(home, request.nextUrl.origin));
   }
 
   if (request.auth && isLanding) {
-    return NextResponse.redirect(new URL("/inbox", request.nextUrl.origin));
+    return NextResponse.redirect(new URL(home, request.nextUrl.origin));
   }
 
   return NextResponse.next();

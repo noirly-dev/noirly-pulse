@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { qk } from "@/src/core/sync/query-keys";
+import { SectionLinks } from "@/src/features/shell/SectionLinks";
 import { CreateChannelDialog } from "@/src/features/channels/CreateChannelDialog";
 import { useCan } from "@/src/features/workspace/WorkspaceRoleContext";
 import { api } from "@/src/lib/api-client";
@@ -55,28 +56,16 @@ export function ChannelSidebar({ workspaceId, onNavigate }: Props) {
         ) : null}
       </div>
       <nav className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto px-1 py-3">
-        <Link
-          href={`/w/${workspaceId}`}
-          onClick={onNavigate}
-          className={itemClass(pathname === `/w/${workspaceId}`)}
-        >
-          Home
-        </Link>
-        <Link
-          href={`/w/${workspaceId}/members`}
-          onClick={onNavigate}
-          className={itemClass(pathname.includes("/members"))}
-        >
-          Members
-        </Link>
-        <Link
-          href={`/w/${workspaceId}/search`}
-          onClick={onNavigate}
-          className={itemClass(pathname.includes("/search"))}
-        >
-          Search
-        </Link>
-        <div className="my-2 h-px border-t border border-[var(--hairline)]" />
+        <SectionLinks
+          onNavigate={onNavigate}
+          links={[
+            { href: `/w/${workspaceId}`, label: "Home", active: pathname === `/w/${workspaceId}` },
+            { href: `/w/${workspaceId}/inbox`, label: "Inbox", active: pathname.startsWith(`/w/${workspaceId}/inbox`) },
+            { href: `/w/${workspaceId}/search`, label: "Search", active: pathname.startsWith(`/w/${workspaceId}/search`) },
+            { href: `/w/${workspaceId}/members`, label: "Members", active: pathname.startsWith(`/w/${workspaceId}/members`) },
+            { href: `/w/${workspaceId}/settings`, label: "Settings", active: pathname.startsWith(`/w/${workspaceId}/settings`) },
+          ]}
+        />
         {channels.length === 0 ? (
           <p className="px-3 py-4 text-sm text-muted-foreground">
             No channels yet. Create one to start chatting with your team.
@@ -103,7 +92,11 @@ export function ChannelSidebar({ workspaceId, onNavigate }: Props) {
                     Private
                   </span>
                 ) : null}
-                {count > 0 ? <Badge>{count > 99 ? "99+" : count}</Badge> : null}
+                {count > 0 ? (
+                  <span aria-label={`${count} unread`}>
+                    <Badge aria-hidden>{count > 99 ? "99+" : count}</Badge>
+                  </span>
+                ) : null}
               </Link>
             );
           })

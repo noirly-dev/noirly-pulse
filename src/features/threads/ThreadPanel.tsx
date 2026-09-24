@@ -21,7 +21,7 @@ type Props = {
   onClose: () => void;
 };
 
-/** Desktop side panel (§11.3). Not a dialog: `aria-modal` stays false. */
+/** Desktop side panel (§11.3): a complementary region, not a modal dialog. */
 export function ThreadPanel({
   conversationId,
   workspaceId,
@@ -73,7 +73,6 @@ export function ThreadPanel({
     <aside
       ref={panel}
       aria-label="Thread"
-      aria-modal="false"
       className="hidden w-[min(420px,40%)] shrink-0 flex-col border-l border-[var(--hairline)] bg-background md:flex"
     >
       <div className="flex items-center justify-between border-b border-[var(--hairline)] px-4 py-3">

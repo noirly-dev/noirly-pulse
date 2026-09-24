@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import type { ConversationPeer, Message } from "@/src/core/models/types";
 import { patchMessage, tombstoneMessage, type MessagesInfinite } from "@/src/core/sync/message-cache";
 import { EmojiPicker } from "@/src/features/chat/EmojiPicker";
@@ -56,13 +56,23 @@ export function MessageBubble({
   const editRequest = useUIStore((s) => s.editMessageId);
 
   // "E" in an empty composer asks the latest own message to enter edit mode.
-  useEffect(() => {
-    if (editRequest && editRequest === message.id) {
-      setDraft(message.content);
-      setEditing(true);
+  // Adjusting state during render (not in an effect) avoids a cascading render.
+  const requested = editRequest === message.id;
+  const [handledRequest, setHandledRequest] = useState(false);
+  if (requested && !handledRequest) {
+    setHandledRequest(true);
+    setDraft(message.content);
+    setEditing(true);
+  } else if (!requested && handledRequest) {
+    setHandledRequest(false);
+  }
+
+  function stopEditing() {
+    setEditing(false);
+    if (useUIStore.getState().editMessageId === message.id) {
       useUIStore.getState().setEditMessageId(null);
     }
-  }, [editRequest, message.id, message.content]);
+  }
 
   function patchCache(update: (old: MessagesInfinite) => MessagesInfinite) {
     queryClient.setQueriesData<MessagesInfinite>(
@@ -128,7 +138,7 @@ export function MessageBubble({
   async function saveEdit() {
     const next = draft.trim();
     if (!next || next === message.content) {
-      setEditing(false);
+      stopEditing();
       return;
     }
     const result = await api.editMessage(message.id, next).catch(() => null);
@@ -140,7 +150,7 @@ export function MessageBubble({
         }),
       );
     }
-    setEditing(false);
+    stopEditing();
   }
 
   return (
@@ -192,7 +202,7 @@ export function MessageBubble({
                     void saveEdit();
                   } else if (e.key === "Escape") {
                     e.preventDefault();
-                    setEditing(false);
+                    stopEditing();
                   }
                 }}
                 className="w-full rounded-md bg-ink/10 p-2 text-sm text-inherit outline-none"
@@ -205,7 +215,7 @@ export function MessageBubble({
                 <Button
                   variant="ghost"
                   className="h-7 px-2 text-xs"
-                  onClick={() => setEditing(false)}
+                  onClick={stopEditing}
                 >
                   Cancel
                 </Button>

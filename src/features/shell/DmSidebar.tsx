@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { SectionLinks } from "@/src/features/shell/SectionLinks";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { conversationTitle } from "@/src/core/chat/title";
@@ -61,9 +62,14 @@ export function DmSidebar({ currentUserId, onNavigate }: Props) {
         </div>
       </div>
       <nav className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto px-1 py-3">
-        <Link href="/inbox" onClick={onNavigate} className={itemClass(pathname === "/inbox")}>
-          Inbox
-        </Link>
+        <SectionLinks
+          onNavigate={onNavigate}
+          links={[
+            { href: "/inbox", label: "Inbox", active: pathname === "/inbox" },
+            { href: "/search", label: "Search", active: pathname === "/search" },
+            { href: "/settings", label: "Settings", active: pathname.startsWith("/settings") },
+          ]}
+        />
         {conversations.length === 0 ? (
           <p className="px-3 py-6 text-sm text-muted-foreground">
             No conversations yet. Start a DM to message someone who has opened Pulse.
@@ -71,7 +77,7 @@ export function DmSidebar({ currentUserId, onNavigate }: Props) {
         ) : (
           conversations.map((conversation) => {
             const href = `/dm/${conversation.id}`;
-            const active = pathname === href;
+            const active = pathname.startsWith(href);
             const count = unread[conversation.id] ?? conversation.unreadCount;
             const title = conversationTitle(conversation, currentUserId);
             const other = conversation.members.find((m) => m.id !== currentUserId);
@@ -84,7 +90,11 @@ export function DmSidebar({ currentUserId, onNavigate }: Props) {
               >
                 <Avatar name={title} src={other?.avatarUrl} size="sm" />
                 <span className="min-w-0 flex-1 truncate">{title}</span>
-                {count > 0 ? <Badge>{count > 99 ? "99+" : count}</Badge> : null}
+                {count > 0 ? (
+                  <span aria-label={`${count} unread`}>
+                    <Badge aria-hidden>{count > 99 ? "99+" : count}</Badge>
+                  </span>
+                ) : null}
               </Link>
             );
           })

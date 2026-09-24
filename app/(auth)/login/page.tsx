@@ -15,7 +15,7 @@ export default async function LoginPage({
 }) {
   const { next } = await searchParams;
   const redirectTo =
-    next && next.startsWith("/") && !next.startsWith("//") ? next : "/inbox";
+    next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
 
   return (
     <AuthShell

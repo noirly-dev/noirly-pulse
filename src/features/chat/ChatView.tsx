@@ -23,6 +23,7 @@ import { useTypingStore, useUnreadStore } from "@/src/stores/ui-store";
 import { Avatar } from "@/src/components/Avatar";
 import { EmptyState } from "@/src/components/EmptyState";
 import { useReadReceipts } from "@/src/features/chat/useReadReceipts";
+import { ChannelSettingsDialog } from "@/src/features/channels/ChannelSettingsDialog";
 import { lastSeenLabel } from "@/src/core/chat/last-seen";
 
 /** Stable fallback: a fresh `{}` per selector call makes Zustand re-render forever. */
@@ -64,6 +65,7 @@ export function ChatView({
   const queryClient = useQueryClient();
   const realtimeEnabled = Boolean(process.env.NEXT_PUBLIC_REALTIME_WS_URL);
   const [lastOwnMessageId, setLastOwnMessageId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { noteRead, flush } = useReadReceipts(conversationId);
   // Receipts track the root timeline; thread panels do not move the pointer.
   const onReadable = useCallback(
@@ -169,6 +171,15 @@ export function ChatView({
         {realtimeEnabled && isChannel ? (
           <PresenceAvatars conversationId={conversationId} />
         ) : null}
+        {isChannel && workspaceId && !threadParentId ? (
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-[var(--surface-2)] hover:text-foreground"
+          >
+            Settings
+          </button>
+        ) : null}
         {(conversation.kind === "dm" ||
           conversation.kind === "group_dm" ||
           conversation.kind === "channel") &&
@@ -199,6 +210,16 @@ export function ChatView({
           currentUserId={currentUserId}
           canModerate={canModerate}
           conversationKind={conversation.kind}
+        />
+      ) : null}
+      {isChannel && workspaceId && settingsOpen ? (
+        <ChannelSettingsDialog
+          open
+          onClose={() => setSettingsOpen(false)}
+          channel={conversation}
+          workspaceId={workspaceId}
+          currentUserId={currentUserId}
+          canManage={canModerate}
         />
       ) : null}
       {threadParentId ? (

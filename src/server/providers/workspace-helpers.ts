@@ -160,6 +160,9 @@ export async function countUnreadInConversation(
     conversationId: oid(conversationId),
     userId: oid(userId),
   }).lean();
+  // Unread tracking starts when a channel is opened/joined (§7.4); unjoined
+  // public channels count as 0, matching the conversation summaries.
+  if (!membership) return 0;
   const filter: Record<string, unknown> = {
     conversationId: oid(conversationId),
     senderId: { $ne: oid(userId) },

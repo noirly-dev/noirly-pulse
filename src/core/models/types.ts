@@ -213,6 +213,8 @@ export type ConversationPeer = User & {
 export type ConversationSummary = Conversation & {
   unreadCount: number;
   members: ConversationPeer[];
+  /** The viewer's own notification setting for this conversation. */
+  myNotifications?: NotificationPref;
 };
 
 export interface Call {

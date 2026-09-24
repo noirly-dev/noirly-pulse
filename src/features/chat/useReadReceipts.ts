@@ -40,7 +40,13 @@ export function useReadReceipts(conversationId: string) {
       }
       void api
         .markRead(conversationId, id)
-        .then(() => queryClient.invalidateQueries({ queryKey: ["conversations"] }))
+        .then(() =>
+          Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["conversations"] }),
+            queryClient.invalidateQueries({ queryKey: ["channels"] }),
+            queryClient.invalidateQueries({ queryKey: ["workspaces"] }),
+          ]),
+        )
         .catch(() => {
           sent.current = null;
         });

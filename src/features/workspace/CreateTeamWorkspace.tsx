@@ -1,10 +1,14 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { qk } from "@/src/core/sync/query-keys";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/src/lib/api-client";
 
 export function CreateTeamWorkspace() {
+  const queryClient = useQueryClient();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -20,6 +24,7 @@ export function CreateTeamWorkspace() {
       const { workspace } = await api.createWorkspace(name);
       setOpen(false);
       setName("");
+      await queryClient.invalidateQueries({ queryKey: qk.workspaces });
       router.push(`/w/${workspace.id}`);
       router.refresh();
     } catch (err) {

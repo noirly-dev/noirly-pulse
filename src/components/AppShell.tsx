@@ -15,7 +15,9 @@ import { WorkspaceEvents } from "@/src/features/realtime/WorkspaceEvents";
 import { setRealtimeScope } from "@/src/features/realtime/PulseRealtimeProvider";
 import { ConversationSidebar } from "@/src/features/shell/ConversationSidebar";
 import { WorkspaceRail } from "@/src/features/shell/WorkspaceRail";
+import { KeyboardShortcuts } from "@/src/features/shell/KeyboardShortcuts";
 import { api } from "@/src/lib/api-client";
+import { LAST_SCOPE_COOKIE, LAST_SCOPE_STORAGE_KEY, scopePathFrom } from "@/src/lib/last-scope";
 import { useUIStore, useWorkspaceStore } from "@/src/stores/ui-store";
 
 export type ShellUser = {
@@ -50,6 +52,26 @@ export function AppShell({ user, workspaces, children }: Props) {
     setActiveWorkspaceId(activeId);
     setRealtimeScope(workspaceMatch, conversationId);
   }, [activeId, setActiveWorkspaceId, workspaceMatch, conversationId]);
+
+  // Remember the last conversation so "/" can reopen it (§7.5). The cookie
+  // lets proxy.ts redirect server-side; localStorage mirrors the spec key.
+  useEffect(() => {
+    const scope = scopePathFrom(pathname);
+    if (!scope) return;
+    document.cookie = `${LAST_SCOPE_COOKIE}=${encodeURIComponent(scope)}; path=/; max-age=${60 * 60 * 24 * 180}; samesite=lax`;
+    try {
+      window.localStorage.setItem(
+        LAST_SCOPE_STORAGE_KEY,
+        JSON.stringify({
+          scope: scope.startsWith("/w/") ? "workspace" : "personal",
+          workspaceId: workspaceMatch ?? undefined,
+          conversationId: conversationId ?? undefined,
+        }),
+      );
+    } catch {
+      /* storage unavailable */
+    }
+  }, [pathname, workspaceMatch, conversationId]);
 
   useEffect(() => {
     void api.heartbeat();
@@ -99,7 +121,7 @@ export function AppShell({ user, workspaces, children }: Props) {
               </div>
             ),
             children: (
-              <div className="flex min-h-0 flex-1">
+              <div className="flex min-h-0 flex-1" data-conversation-nav="">
                 <WorkspaceRail
                   workspaces={workspaces}
                   activeId={activeId}
@@ -150,6 +172,7 @@ export function AppShell({ user, workspaces, children }: Props) {
           {children}
         </NoirlyAppShell>
         <CommandPalette workspaces={workspaces} currentUserId={user.id} />
+        <KeyboardShortcuts />
       </CallMediaProvider>
     </>
   );

@@ -27,6 +27,16 @@ export const createChannelSchema = z.object({
   topic: z.string().trim().max(500).optional(),
 });
 
+export const updateChannelSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80).optional(),
+    topic: z.string().trim().max(500).nullable().optional(),
+    visibility: z.enum(["public", "private"]).optional(),
+  })
+  .refine((v) => v.name !== undefined || v.topic !== undefined || v.visibility !== undefined, {
+    message: "Nothing to update",
+  });
+
 export const updateMemberRoleSchema = z.object({
   role: z.enum(MEMBER_ROLES).refine((role) => role !== "owner", {
     message: "Cannot assign owner via this endpoint",

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { migrateConversationIndexes } from "@/src/server/db/migrate-indexes";
 
 type MongooseCache = {
   conn: typeof mongoose | null;
@@ -27,9 +28,16 @@ export async function connectMongo(): Promise<typeof mongoose> {
   }
 
   if (!cache.promise) {
-    cache.promise = mongoose.connect(uri, {
-      bufferCommands: false,
-    });
+    cache.promise = mongoose
+      .connect(uri, {
+        bufferCommands: false,
+      })
+      .then(async (conn) => {
+        await migrateConversationIndexes(conn).catch((error) => {
+          console.error("[pulse] conversation index migration failed", error);
+        });
+        return conn;
+      });
   }
 
   cache.conn = await cache.promise;

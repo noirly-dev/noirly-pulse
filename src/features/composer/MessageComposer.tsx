@@ -87,7 +87,9 @@ export function MessageComposer({
 
   // Hard stop (§11.2): leaving the conversation/thread ends our typing state.
   const stopRef = useRef(stopTyping);
-  stopRef.current = stopTyping;
+  useEffect(() => {
+    stopRef.current = stopTyping;
+  });
   useEffect(() => () => stopRef.current(), [draftKey]);
 
   function insertMention(user: User) {
@@ -233,7 +235,6 @@ export function MessageComposer({
           value={draft}
           aria-multiline="true"
           aria-autocomplete="list"
-          aria-expanded={mentionOptions.length > 0}
           aria-controls={mentionOptions.length > 0 ? `mentions-${draftKey}` : undefined}
           onCompositionStart={() => {
             composing.current = true;
