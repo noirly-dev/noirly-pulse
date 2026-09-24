@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import type { Message, User } from "@/src/core/models/types";
+import type { Message, TypingState, User } from "@/src/core/models/types";
 import { PresenceAvatars } from "@/src/features/channels/PresenceAvatars";
 import { ChannelCallBanner } from "@/src/features/calls/ChannelCallBanner";
 import { StartCallButtons } from "@/src/features/calls/StartCallButtons";
@@ -21,6 +21,9 @@ import { api } from "@/src/lib/api-client";
 import { useTypingStore, useUnreadStore } from "@/src/stores/ui-store";
 import { Avatar } from "@/src/components/Avatar";
 import { EmptyState } from "@/src/components/EmptyState";
+
+/** Stable fallback: a fresh `{}` per selector call makes Zustand re-render forever. */
+const NO_TYPERS: Record<string, TypingState> = {};
 
 type Props = {
   conversationId: string;
@@ -57,7 +60,7 @@ export function ChatView({
   });
   const conversation = data?.conversation;
   const title = conversation ? conversationTitle(conversation, currentUserId) : "Conversation";
-  const typing = useTypingStore((s) => s.byConv[conversationId] ?? {});
+  const typing = useTypingStore((s) => s.byConv[conversationId] ?? NO_TYPERS);
   const typers = Object.values(typing).filter(
     (row) =>
       row.userId !== currentUserId &&

@@ -8,7 +8,7 @@ import {
   useRealtimeStatus,
 } from "@noirly-dev/realtime-client/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { CallPublic, Message, Reaction, ReadReceipt } from "@/src/core/models/types";
 import { pulseChannel } from "@/src/core/realtime/channels";
 import {
@@ -57,12 +57,15 @@ export function ConversationRealtime({
 
   const { join, leave } = usePresence(conv, { collapseByUserId: true });
 
+  // Presence is rebuilt from join snapshots after every (re)connect, so join on
+  // each transition to "ready" (§5.7). Joining earlier rejects "not connected".
   useEffect(() => {
-    void join({ displayName, avatarUrl });
+    if (status !== "ready") return;
+    join({ displayName, avatarUrl }).catch(() => undefined);
     return () => {
-      void leave();
+      leave().catch(() => undefined);
     };
-  }, [join, leave, displayName, avatarUrl]);
+  }, [status, join, leave, displayName, avatarUrl]);
 
   useEffect(() => {
     if (lastEventId) window.sessionStorage.setItem(eidKey(conv), lastEventId);
@@ -269,9 +272,16 @@ export function ConversationRealtime({
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [conversationId]);
 
+  // After a dropped connection comes back, merge anything missed (§11.9).
+  const prevStatus = useRef(status);
   useEffect(() => {
-    if (status === "ready") {
-      useUnreadStore.getState().clear(conversationId);
+    const was = prevStatus.current;
+    prevStatus.current = status;
+    if (status !== "ready") return;
+    useUnreadStore.getState().clear(conversationId);
+    if (was === "reconnecting" || was === "closed") {
+      void catchUp();
+      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
     }
   }, [status, conversationId]);
 
